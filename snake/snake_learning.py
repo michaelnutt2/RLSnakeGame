@@ -44,8 +44,9 @@ espilon = 0.2
 for i in range(episodes):
     env.render()
     #print(observation)
-    action = env.action_space.sample()
-    observation, reward, done, info = env.step(action)
+    action0 = env.action_space.sample()
+    action1 = env.action_space.sample()
+    observation, reward, done, info = env.step([action0,action1])
     #print(observation, reward, done, info)
     if done:
         print("Finished after {} timesteps".format(i+1))
