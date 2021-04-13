@@ -98,23 +98,23 @@ running_reward = [[],[]]
 episode_count = 0
 frame_count = 0
 # Number of frames to take random action and observe output
-epsilon_random_frames = 50000
+epsilon_random_frames = 500
 # Number of frames for exploration
-epsilon_greedy_frames = 1000000.0
+epsilon_greedy_frames = 10000.0
 # Maximum replay length
 # Note: The Deepmind paper suggests 1000000 however this causes memory issues
-max_memory_length = 100000
+max_memory_length = 10000
 # Train the model after 4 actions
 update_after_actions = 4
 # How often to update the target network
-update_target_network = 10000
+update_target_network = 100
 # Using huber loss for stability
 loss_function = keras.losses.Huber()
 
 while True:  # Run until solved
     state = np.array(env.reset())
     episode_reward = [0,0]
-
+    print("On episode: ", episode_count)
     for timestep in range(1, max_steps_per_episode):
         env.render(); #Adding this line would show the attempts
         # of the agent in a pop up window.
@@ -123,10 +123,12 @@ while True:  # Run until solved
         # Use epsilon-greedy for exploration for snake 0
         if frame_count < epsilon_random_frames or epsilon > np.random.rand(1)[0]:
             # Take random action
+            
             action0 = np.random.choice(num_actions)
         else:
             # Predict action Q-values
             # From environment state
+            print("Taking educated")
             state_tensor = tf.convert_to_tensor(state)
             state_tensor = tf.expand_dims(state_tensor, 0)
             action_probs = models[0](state_tensor, training=False)
@@ -252,9 +254,7 @@ while True:  # Run until solved
             # update the the target network with new weights
             model_targets[0].set_weights(models[0].get_weights())
             model_targets[1].set_weights(models[1].get_weights())
-            # Log details
-            template = "running reward: {:.2f} at episode {}, frame count {}"
-            print(template.format(running_reward, episode_count, frame_count))
+
 
         # Limit the state and reward history
         if len(rewards_history) > max_memory_length:
@@ -274,6 +274,10 @@ while True:  # Run until solved
         del episode_reward_history[:1]
     running_reward0 = np.mean(episode_reward_history[0])
     running_reward1 = np.mean(episode_reward_history[1])
+
+    if episode_count%10 == 0:   
+        models[0].save("snake0_"+str(episode_count))
+        models[1].save("snake1_"+str(episode_count))
 
     episode_count += 1
 
