@@ -129,6 +129,7 @@ while True:  # Run until solved
             # Predict action Q-values
             # From environment state
             print("Taking educated")
+            state = tf.cast(state, tf.float32)
             state_tensor = tf.convert_to_tensor(state)
             state_tensor = tf.expand_dims(state_tensor, 0)
             action_probs = models[0](state_tensor, training=False)
@@ -142,6 +143,7 @@ while True:  # Run until solved
         else:
             # Predict action Q-values
             # From environment state
+            state = tf.cast(state, tf.float32)
             state_tensor = tf.convert_to_tensor(state)
             state_tensor = tf.expand_dims(state_tensor, 0)
             action_probs = models[1](state_tensor, training=False)
