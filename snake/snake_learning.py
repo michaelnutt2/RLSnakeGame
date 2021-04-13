@@ -17,6 +17,12 @@ import gym_snake
 
 # Construct Environment
 env = gym.make('snake-plural-v0')
+env.grid_size = [20,20]
+env.unit_size = 10
+env.unit_gap = 0
+env.snake_size = 5
+env.n_snakes = 2
+env.n_foods = 1
 observation = env.reset() # Constructs an instance of the game
 
 # Controller
