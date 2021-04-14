@@ -10,7 +10,7 @@ for env in env_dict:
     if 'snake-v0' in env:
         print("Remove {} from registry".format(env))
         del gym.envs.registration.registry.env_specs[env]
-
+ 
 
 
 import gym_snake
@@ -18,6 +18,9 @@ import numpy as np
 import tensorflow as tf
 from tensorflow import keras
 from tensorflow.keras import layers
+
+
+tf.executing_eagerly()
 
 # Configuration paramaters for the whole setup
 seed = 42
