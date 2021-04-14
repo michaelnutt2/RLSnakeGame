@@ -131,13 +131,14 @@ while True:  # Run until solved
         else:
             # Predict action Q-values
             # From environment state
-            print("Taking educated")
+            print("Taking educated guess: ")
             state = tf.cast(state, tf.float32)
             state_tensor = tf.convert_to_tensor(state)
             state_tensor = tf.expand_dims(state_tensor, 0)
             action_probs = models[0](state_tensor, training=False)
             # Take best action
-            action0 = tf.argmax(action_probs[0]).numpy()
+            print(tf.argmax(action_probs).numpy())
+            action0 = tf.argmax(action_probs).numpy()
             
         # Use epsilon-greedy for exploration for snake 1
         if frame_count < epsilon_random_frames or epsilon > np.random.rand(1)[0]:
@@ -151,7 +152,9 @@ while True:  # Run until solved
             state_tensor = tf.expand_dims(state_tensor, 0)
             action_probs = models[1](state_tensor, training=False)
             # Take best action
-            action1 = tf.argmax(action_probs[0]).numpy()
+            print("Taking educated guess: ")
+            print(tf.argmax(action_probs).numpy())
+            action1 = tf.argmax(action_probs).numpy()
 
         # Decay probability of taking random action
         epsilon -= epsilon_interval / epsilon_greedy_frames
