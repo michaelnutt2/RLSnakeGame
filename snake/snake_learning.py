@@ -18,6 +18,8 @@ import numpy as np
 import tensorflow as tf
 from tensorflow import keras
 from tensorflow.keras import layers
+import pandas as pd 
+import random
 
 
 tf.executing_eagerly()
@@ -140,13 +142,14 @@ while True:  # Run until solved
         else:
             # Predict action Q-values
             # From environment state
-            print("Taking educated")
+            print("Taking educated guess: ")
             state = tf.cast(state, tf.float32)
             state_tensor = tf.convert_to_tensor(state)
             state_tensor = tf.expand_dims(state_tensor, 0)
             action_probs = models[0](state_tensor, training=False)
             # Take best action
-            action0 = tf.argmax(action_probs[0]).numpy()
+            print(pd.DataFrame(tf.argmax(action_probs).numpy()))
+            action0 = random.choice(pd.DataFrame(tf.argmax(action_probs).numpy()).nlargest(n=1,columns=[0],keep='all').index)
             
         # Use epsilon-greedy for exploration for snake 1
         if frame_count < epsilon_random_frames or epsilon > np.random.rand(1)[0]:
@@ -160,7 +163,9 @@ while True:  # Run until solved
             state_tensor = tf.expand_dims(state_tensor, 0)
             action_probs = models[1](state_tensor, training=False)
             # Take best action
-            action1 = tf.argmax(action_probs[0]).numpy()
+            print("Taking educated guess: ")
+            print(pd.DataFrame(tf.argmax(action_probs).numpy()))
+            action1 = random.choice(pd.DataFrame(tf.argmax(action_probs).numpy()).nlargest(n=1,columns=[0],keep='all').index)
 
         # Decay probability of taking random action
         epsilon -= epsilon_interval / epsilon_greedy_frames
@@ -290,8 +295,8 @@ while True:  # Run until solved
     running_reward1 = np.mean(episode_reward_history[1])
 
     if episode_count%10 == 0:   
-        models[0].save("snake0_"+str(episode_count))
-        models[1].save("snake1_"+str(episode_count))
+        models[0].save("snake0_"+str(episode_count)+".keras")
+        models[1].save("snake1_"+str(episode_count)+".keras")
 
     episode_count += 1
 
