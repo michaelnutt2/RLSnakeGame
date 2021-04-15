@@ -53,6 +53,13 @@ def create_q_model():
 
     return keras.Model(inputs=inputs, outputs=action)
 
+def avoid_collision(controller):
+    '''
+    Returns a list of the posible actions that the AI snake can take that will avoid collision with a wall or another snake
+    '''
+    # Get the snake object
+    # Get a list of the 3 surrounding coordinates of the head
+    # check for collision ()
 
 # The first model makes the predictions for Q-values which are used to
 # make a action.
@@ -128,6 +135,8 @@ while True:  # Run until solved
             # Take random action
             
             action0 = np.random.choice(num_actions)
+
+            #TODO: Add algorithm to avoid walls and direct towards food
         else:
             # Predict action Q-values
             # From environment state

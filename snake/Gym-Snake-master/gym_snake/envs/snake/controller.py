@@ -106,6 +106,29 @@ class Controller():
         directions - tuple, list, or ndarray of directions corresponding to each snake.
         """
 
+        # Fawad's Code #
+
+        # Return a list of the spaces surrounding the head of the snake [BODY, FOOD, SPACE]. 
+        # A wall will be considered a Body space
+        agent = self.snakes[0]
+        H = agent.head
+        surr_coord = ( (H[0] + 1, H[1]), (H[0] - 1, H[1]), (H[0], H[1] + 1), (H[0], H[1] - 1) )
+        surr_info = []
+
+        for i in range(4):
+            if self.grid.check_death(surr_coord(i)):
+                surr_info.append(Grid.BODY_COLOR)
+            elif self.grid.food_space(surr_coord(i)):
+                surr_info.append(Grid.FOOD_COLOR)
+            else:
+                surr_info.append(Grid.SPACE_COLOR)
+
+        # Return the euclidean distance
+        food_dist = np.linalg.norm(agent.head, self.grid.food_coord)
+
+        ###############################
+
+
         # Ensure no more play until reset
         if self.snakes_remaining < 1 or self.grid.open_space < 1:
             if type(directions) == type(int()) or len(directions) is 1:
