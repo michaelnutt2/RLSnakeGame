@@ -33,7 +33,6 @@ class Grid():
         self.grid = np.zeros((height, width, channels), dtype=np.uint8)
         self.grid[:,:,:] = self.SPACE_COLOR
         self.open_space = grid_size[0]*grid_size[1]
-        self.food_coord = []
 
     def check_death(self, head_coord):
         """
@@ -209,7 +208,7 @@ class Grid():
         if self.open_space < 1 or not np.array_equal(self.color_of(coord), self.SPACE_COLOR):
             return False
         self.draw(coord, self.FOOD_COLOR)
-        self.food_coord.append(coord)
+        self.food_coord = coord
         return True
 
     def new_food(self):
@@ -226,7 +225,7 @@ class Grid():
             if np.array_equal(self.color_of(coord), self.SPACE_COLOR):
                 coord_not_found = False
         self.draw(coord, self.FOOD_COLOR)
-        self.food_coord.append(coord)
+        self.food_coord = coord
         return True
 
     def off_grid(self, coord):
