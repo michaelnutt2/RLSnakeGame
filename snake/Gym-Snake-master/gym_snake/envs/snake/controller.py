@@ -156,9 +156,9 @@ class Controller():
         # Ensure no more play until reset
         if self.snakes_remaining < 1 or self.grid.open_space < 1:
             if type(directions) == type(int()) or len(directions) is 1:
-                return self.grid.grid.copy(), 0, True, {"snakes_remaining":self.snakes_remaining}
+                return snake_info, 0, True, {"snakes_remaining":self.snakes_remaining}
             else:
-                return self.grid.grid.copy(), [0]*len(directions), True, {"snakes_remaining":self.snakes_remaining}
+                return snake_info, [0]*len(directions), True, {"snakes_remaining":self.snakes_remaining}
 
         rewards = []
 
