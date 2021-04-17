@@ -1,5 +1,6 @@
 import gym
 from pyautogui import press
+from two_headed_snake import hum_input
 
 env_dict = gym.envs.registration.registry.env_specs.copy()
 
@@ -38,7 +39,7 @@ batch_size = 32  # Size of batch taken from replay buffer
 max_steps_per_episode = 100000
 
 num_actions = 4
-dir_to_key = {0:'w', 1:'d',2:'a',3:'a'}
+dir_to_key = {0:'w', 1:'d',2:'s',3:'a'}
 
 def create_q_model():
     # Network defined by the Deepmind paper, modified heavily
@@ -130,6 +131,9 @@ while True:  # Run until solved
         env.render(); #Adding this line would show the attempts
         # of the agent in a pop up window.
         frame_count += 1
+
+        # Human player input = action 1
+        action1 = hum_input
 
         # Use epsilon-greedy for exploration for snake 0
         if frame_count < epsilon_random_frames or epsilon > np.random.rand(1)[0]:

@@ -24,6 +24,8 @@ font_style = pygame.font.SysFont("banschrift", 25)
 score_font = pygame.font.SysFont("freesans", 35)
 snake_block = 20
 snake_speed = 15
+hum_input = 0   # human input to be read by model
+
 
 player_one_keys = [pygame.K_w, pygame.K_a, pygame.K_s, pygame.K_d]   # AI
 player_two_keys = [pygame.K_UP, pygame.K_LEFT, pygame.K_DOWN, pygame.K_RIGHT]  # Human
@@ -37,14 +39,19 @@ class Snake:
         self.key_list = keys    # w/up, a/left, s/down, d/right
 
 
-def update_move(player, event):
+def update_move(player, event, is_hum = False):
+    # If the player is human, then update the global human input as well
     if event == player.key_list[0]:    # w/UP
+        if is_hum: hum_input = 0
         return 0, -snake_block              # x_change, y_change
     elif event == player.key_list[1]:  # a/LEFT
+        if is_hum: hum_input = 3
         return -snake_block, 0
     elif event == player.key_list[2]:  # s/DOWN
+        if is_hum: hum_input = 2
         return 0, snake_block
     elif event == player.key_list[3]:  # d/RIGHT
+        if is_hum: hum_input = 1
         return snake_block, 0
 
 
@@ -110,8 +117,7 @@ def game_loop():
                 if event.key in player_one_keys:
                     p1_x_change, p1_y_change = update_move(player_one, event.key)
                 elif event.key in player_two_keys:
-                    # Code to update the AI
-                    p2_x_change, p2_y_change = update_move(player_two, event.key)
+                    p2_x_change, p2_y_change = update_move(player_two, event.key, True)
 
         if p1_x >= display_width or p1_x < 0 or p1_y >= display_height or p1_y < 0:
             game_close = True
