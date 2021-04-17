@@ -323,7 +323,7 @@ while True:  # Run until solved
 
     episode_count += 1
 
-    if game_on == False and (running_reward0 > 40 or running_reward1 > 40):  # Condition to consider the task solved
+    if game_on == False and (running_reward0 > 40):  # Condition to consider the task solved
         print("Solved at episode {}!".format(episode_count))
         break
 
