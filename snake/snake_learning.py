@@ -1,4 +1,5 @@
 import gym
+from pyautogui import press
 
 env_dict = gym.envs.registration.registry.env_specs.copy()
 
@@ -37,7 +38,7 @@ batch_size = 32  # Size of batch taken from replay buffer
 max_steps_per_episode = 100000
 
 num_actions = 4
-
+dir_to_key = {0:'w', 1:'d',2:'a',3:'a'}
 
 def create_q_model():
     # Network defined by the Deepmind paper
@@ -62,6 +63,7 @@ def avoid_collision(controller):
     # Get the snake object
     # Get a list of the 3 surrounding coordinates of the head
     # check for collision ()
+
 
 # The first model makes the predictions for Q-values which are used to
 # make a action.
@@ -137,8 +139,14 @@ while True:  # Run until solved
             # Take random action
             
             action0 = np.random.choice(num_actions)
+            press(dir_to_key[action0])
+
+            #TODO: Input the action of the player 2 human
+            
 
             #TODO: Add algorithm to avoid walls and direct towards food
+
+
         else:
             # Predict action Q-values
             # From environment state
