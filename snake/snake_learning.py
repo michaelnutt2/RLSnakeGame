@@ -1,6 +1,4 @@
 import gym
-from pyautogui import press
-from two_headed_snake import hum_input
 
 env_dict = gym.envs.registration.registry.env_specs.copy()
 
@@ -23,7 +21,11 @@ from tensorflow.keras import layers
 import pandas as pd 
 import random
 
-game_on = True
+game_on = False
+
+if game_on:
+    from pyautogui import press
+    from two_headed_snake import hum_input
 
 tf.executing_eagerly()
 
