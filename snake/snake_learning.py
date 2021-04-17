@@ -23,6 +23,7 @@ from tensorflow.keras import layers
 import pandas as pd 
 import random
 
+game_on = True
 
 tf.executing_eagerly()
 
@@ -36,7 +37,7 @@ epsilon_interval = (
     epsilon_max - epsilon_min
 )  # Rate at which to reduce chance of random action being taken
 batch_size = 32  # Size of batch taken from replay buffer
-max_steps_per_episode = 100000
+max_steps_per_episode = 100000000000
 
 num_actions = 4
 dir_to_key = {0:'w', 1:'d',2:'s',3:'a'}
@@ -134,15 +135,14 @@ while True:  # Run until solved
         
         #print(state.shape)
 
-        # Human player input = action 1
-        action1 = hum_input
 
         # Use epsilon-greedy for exploration for snake 0
         if frame_count < epsilon_random_frames or epsilon > np.random.rand(1)[0]:
             # Take random action
             
             action0 = np.random.choice(num_actions)
-            press(dir_to_key[action0])
+            if game_on == True:
+                press(dir_to_key[action0])
 
             #TODO: Input the action of the player 2 human
             
@@ -164,20 +164,27 @@ while True:  # Run until solved
             action0 = random.choice(pd.DataFrame(action_probs.numpy()[0]).nlargest(n=1,columns=[0],keep='all').index)
             
         # Use epsilon-greedy for exploration for snake 1
-        if frame_count < epsilon_random_frames or epsilon > np.random.rand(1)[0]:
-            # Take random action
-            action1 = np.random.choice(num_actions)
+        if game_on == True:
+            # Human player input = action 1
+            action1 = hum_input
         else:
-            # Predict action Q-values
-            # From environment state
-            state = tf.cast(state, tf.float32)
-            state_tensor = tf.convert_to_tensor(state)
-            state_tensor = tf.expand_dims(state_tensor, 0)
-            action_probs = models[1](state_tensor, training=False)
-            # Take best action
-            print("Taking educated guess snake 1: ")
-            print(random.choice(pd.DataFrame(action_probs.numpy()[0]).nlargest(n=1,columns=[0],keep='all').index))
-            action1 = random.choice(pd.DataFrame(action_probs.numpy()[0]).nlargest(n=1,columns=[0],keep='all').index)
+            if frame_count < epsilon_random_frames or epsilon > np.random.rand(1)[0]:
+                # Take random action
+                action1 = np.random.choice(num_actions)
+            else:
+                # Predict action Q-values
+                # From environment state
+                state = tf.cast(state, tf.float32)
+                state_tensor = tf.convert_to_tensor(state)
+                state_tensor = tf.expand_dims(state_tensor, 0)
+                action_probs = models[1](state_tensor, training=False)
+                # Take best action
+                print("Taking educated guess snake 1: ")
+                print(random.choice(pd.DataFrame(action_probs.numpy()[0]).nlargest(n=1,columns=[0],keep='all').index))
+                action1 = random.choice(pd.DataFrame(action_probs.numpy()[0]).nlargest(n=1,columns=[0],keep='all').index)
+            
+
+
 
         # Decay probability of taking random action
         epsilon -= epsilon_interval / epsilon_greedy_frames
@@ -203,7 +210,7 @@ while True:  # Run until solved
         state = state_next
 
         # Update every fourth frame and once batch size is over 32
-        if frame_count % update_after_actions == 0 and len(done_history) > batch_size:
+        if game_on == False and frame_count % update_after_actions == 0 and len(done_history) > batch_size:
 
             # Get indices of samples for replay buffers
             indices = np.random.choice(range(len(done_history)), size=batch_size)
@@ -285,7 +292,7 @@ while True:  # Run until solved
 
 
 
-        if frame_count % update_target_network == 0:
+        if game_on == False and frame_count % update_target_network == 0:
             # update the the target network with new weights
             model_targets[0].set_weights(models[0].get_weights())
             model_targets[1].set_weights(models[1].get_weights())
@@ -310,13 +317,13 @@ while True:  # Run until solved
     running_reward0 = np.mean(episode_reward_history[0])
     running_reward1 = np.mean(episode_reward_history[1])
 
-    if episode_count%10 == 0:   
+    if game_on == False and episode_count%10 == 0:   
         models[0].save("snake0_"+str(episode_count)+".keras")
         models[1].save("snake1_"+str(episode_count)+".keras")
 
     episode_count += 1
 
-    if running_reward0 > 40 or running_reward1 > 40:  # Condition to consider the task solved
+    if game_on == False and (running_reward0 > 40 or running_reward1 > 40):  # Condition to consider the task solved
         print("Solved at episode {}!".format(episode_count))
         break
 
