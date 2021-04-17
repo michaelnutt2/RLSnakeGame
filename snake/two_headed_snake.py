@@ -25,8 +25,8 @@ score_font = pygame.font.SysFont("freesans", 35)
 snake_block = 20
 snake_speed = 15
 
-player_one_keys = [pygame.K_w, pygame.K_a, pygame.K_s, pygame.K_d]
-player_two_keys = [pygame.K_UP, pygame.K_LEFT, pygame.K_DOWN, pygame.K_RIGHT]
+player_one_keys = [pygame.K_w, pygame.K_a, pygame.K_s, pygame.K_d]   # AI
+player_two_keys = [pygame.K_UP, pygame.K_LEFT, pygame.K_DOWN, pygame.K_RIGHT]  # Human
 
 
 class Snake:
@@ -69,7 +69,7 @@ def message(msg, color):
 
 def game_loop():
     # TODO rework to take input to determine if players or ai
-    player_one = Snake(False, player_one_keys)
+    player_one = Snake(True, player_one_keys)
     player_two = Snake(False, player_two_keys)
     game_over = False
     game_close = False
@@ -110,6 +110,7 @@ def game_loop():
                 if event.key in player_one_keys:
                     p1_x_change, p1_y_change = update_move(player_one, event.key)
                 elif event.key in player_two_keys:
+                    # Code to update the AI
                     p2_x_change, p2_y_change = update_move(player_two, event.key)
 
         if p1_x >= display_width or p1_x < 0 or p1_y >= display_height or p1_y < 0:
