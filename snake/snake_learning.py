@@ -47,8 +47,8 @@ def create_q_model():
     layer1 = layers.Flatten()(inputs)
     layer2 = layers.Dense(30, activation="relu")(layer1)
     layer3 = layers.Dense(60, activation="relu")(layer2)
-    layer4 = layers.Dense(30, activation="relu")(layer3)
-    layer5 = layers.Dense(15, activation="relu")(layer4)
+    layer4 = layers.Dense(60, activation="relu")(layer3)
+    layer5 = layers.Dense(30, activation="relu")(layer4)
     action = layers.Dense(num_actions, activation="linear")(layer5)
 
     return keras.Model(inputs=inputs, outputs=action)
@@ -109,7 +109,7 @@ running_reward = [[],[]]
 episode_count = 0
 frame_count = 0
 # Number of frames to take random action and observe output
-epsilon_random_frames = 500
+epsilon_random_frames = 5000
 # Number of frames for exploration
 epsilon_greedy_frames = 10000.0
 # Maximum replay length
@@ -118,7 +118,7 @@ max_memory_length = 10000
 # Train the model after 4 actions
 update_after_actions = 4
 # How often to update the target network
-update_target_network = 100
+update_target_network = 500
 # Using huber loss for stability
 loss_function = keras.losses.Huber()
 
@@ -130,6 +130,8 @@ while True:  # Run until solved
         env.render(); #Adding this line would show the attempts
         # of the agent in a pop up window.
         frame_count += 1
+        
+        #print(state.shape)
 
         # Use epsilon-greedy for exploration for snake 0
         if frame_count < epsilon_random_frames or epsilon > np.random.rand(1)[0]:
@@ -147,14 +149,15 @@ while True:  # Run until solved
         else:
             # Predict action Q-values
             # From environment state
-            print("Taking educated guess: ")
+            
             state = tf.cast(state, tf.float32)
             state_tensor = tf.convert_to_tensor(state)
             state_tensor = tf.expand_dims(state_tensor, 0)
             action_probs = models[0](state_tensor, training=False)
             # Take best action
-            print(pd.DataFrame(tf.argmax(action_probs).numpy()))
-            action0 = random.choice(pd.DataFrame(tf.argmax(action_probs).numpy()).nlargest(n=1,columns=[0],keep='all').index)
+            print("Taking educated guess snake 0: ")
+            print(random.choice(pd.DataFrame(action_probs.numpy()[0]).nlargest(n=1,columns=[0],keep='all').index))
+            action0 = random.choice(pd.DataFrame(action_probs.numpy()[0]).nlargest(n=1,columns=[0],keep='all').index)
             
         # Use epsilon-greedy for exploration for snake 1
         if frame_count < epsilon_random_frames or epsilon > np.random.rand(1)[0]:
@@ -168,9 +171,9 @@ while True:  # Run until solved
             state_tensor = tf.expand_dims(state_tensor, 0)
             action_probs = models[1](state_tensor, training=False)
             # Take best action
-            print("Taking educated guess: ")
-            print(pd.DataFrame(tf.argmax(action_probs).numpy()))
-            action1 = random.choice(pd.DataFrame(tf.argmax(action_probs).numpy()).nlargest(n=1,columns=[0],keep='all').index)
+            print("Taking educated guess snake 1: ")
+            print(random.choice(pd.DataFrame(action_probs.numpy()[0]).nlargest(n=1,columns=[0],keep='all').index))
+            action1 = random.choice(pd.DataFrame(action_probs.numpy()[0]).nlargest(n=1,columns=[0],keep='all').index)
 
         # Decay probability of taking random action
         epsilon -= epsilon_interval / epsilon_greedy_frames
@@ -213,7 +216,7 @@ while True:  # Run until solved
             # Build the updated Q-values for the sampled future states
             # Use the target model for stability
             future_rewards0 = model_targets[0].predict(state_next_sample0)
-            print(tf.reduce_max(future_rewards0, axis=1))
+            #print(tf.reduce_max(future_rewards0, axis=1))
             # Q value = reward + discount factor * expected future reward
             updated_q_values0 = rewards_sample0 + gamma * tf.reduce_max(
                 future_rewards0, axis=1
