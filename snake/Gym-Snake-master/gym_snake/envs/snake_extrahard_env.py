@@ -22,15 +22,18 @@ class SnakeExtraHardEnv(gym.Env):
         self.viewer = None
         self.action_space = Discrete(4)
         self.last_obs = None
+        self.last_grid = None
         self.random_init = random_init
 
     def step(self, action):
         self.last_obs, rewards, done, info = self.controller.step(action)
+        self.last_grid = self.controller.grid.grid.copy()
         return self.last_obs, rewards, done, info
 
     def reset(self):
         self.controller = Controller(self.grid_size, self.unit_size, self.unit_gap, self.snake_size, self.n_snakes, self.n_foods, random_init=self.random_init)
-        self.last_obs = self.controller.grid.grid
+        self.last_obs = self.controller.get_snake_info()
+        self.last_grid = self.controller.grid.grid.copy()
         return self.last_obs
 
     def render(self, mode='human', close=False, frame_speed=.1):
@@ -41,7 +44,7 @@ class SnakeExtraHardEnv(gym.Env):
             self.fig.show()
         else:
             self.viewer.clear()
-            self.viewer.imshow(self.last_obs)
+            self.viewer.imshow(self.last_grid )
             plt.pause(frame_speed)
         self.fig.canvas.draw()
 

@@ -97,6 +97,44 @@ class Controller():
         self.grid.erase_snake_body(self.dead_snakes[snake_idx])
         self.dead_snakes[snake_idx] = None
         self.snakes_remaining -= 1
+    
+    def get_snake_info(self):
+        snake_info = []
+        
+        for snake in range(len(self.snakes)):
+            agent = self.snakes[snake]
+            if agent is not None :
+                H = agent.head
+                surr_coord = ( (H[0] + 1, H[1]), (H[0] - 1, H[1]), (H[0], H[1] + 1), (H[0], H[1] - 1) )
+                surr_info = []
+            
+                for i in range(4):
+                    if self.grid.check_death(surr_coord[i]):
+                        surr_info.append(np.array(surr_coord[i] + (1,)))
+                    elif self.grid.food_space(surr_coord[i]):
+                        surr_info.append(np.array(surr_coord[i] + (2,)))
+                    else:
+                        surr_info.append(np.array(surr_coord[i] + (0,)))
+            
+                # Return the euclidean distance
+                food_dist = np.linalg.norm(self.grid.food_coord - agent.head)
+                
+                food_diff = [self.grid.food_coord[0] - H[0] , self.grid.food_coord[1] - H[1]]
+                food_diff.append(food_dist)
+                
+                surr_info.append(food_diff)
+                snake_info.append(surr_info)
+            else:
+                neg_1s = [-1,-1,-1]
+                surr_info = []
+                surr_info.append(neg_1s)
+                surr_info.append(neg_1s)
+                surr_info.append(neg_1s)
+                surr_info.append(neg_1s)
+                surr_info.append(neg_1s)
+                snake_info.append(surr_info)
+            
+        return snake_info
 
     def step(self, directions):
         """
@@ -108,23 +146,9 @@ class Controller():
 
         # Fawad's Code #
 
-        # Return a list of the spaces surrounding the head of the snake [BODY, FOOD, SPACE]. 
-        # A wall will be considered a Body space
-        agent = self.snakes[0]
-        H = agent.head
-        surr_coord = ( (H[0] + 1, H[1]), (H[0] - 1, H[1]), (H[0], H[1] + 1), (H[0], H[1] - 1) )
-        surr_info = []
-
-        for i in range(4):
-            if self.grid.check_death(surr_coord(i)):
-                surr_info.append(Grid.BODY_COLOR)
-            elif self.grid.food_space(surr_coord(i)):
-                surr_info.append(Grid.FOOD_COLOR)
-            else:
-                surr_info.append(Grid.SPACE_COLOR)
-
-        # Return the euclidean distance
-        food_dist = np.linalg.norm(agent.head, self.grid.food_coord)
+        # Return a list of the spaces surrounding the head of the snake [SPACE = 0, BODY/HEAD/WALL = 1, FOOD = 2]. 
+        # A wall will be considered a Body 
+        snake_info = self.get_snake_info()
 
         ###############################
 
@@ -149,6 +173,8 @@ class Controller():
 
         done = self.snakes_remaining < 1 or self.grid.open_space < 1
         if len(rewards) is 1:
-            return self.grid.grid.copy(), rewards[0], done, {"snakes_remaining":self.snakes_remaining}
+            return snake_info, rewards[0], done, {"snakes_remaining":self.snakes_remaining}
         else:
-            return self.grid.grid.copy(), rewards, done, {"snakes_remaining":self.snakes_remaining}
+            return snake_info, rewards, done, {"snakes_remaining":self.snakes_remaining}
+
+    

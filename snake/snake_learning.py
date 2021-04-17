@@ -40,17 +40,14 @@ num_actions = 4
 
 
 def create_q_model():
-    # Network defined by the Deepmind paper
-    inputs = layers.Input(shape=(200, 200, 3,))
+    # Network defined by the Deepmind paper, modified heavily
+    inputs = layers.Input(shape=(2, 5, 3,))
 
-    # Convolutions on the frames on the screen
-    layer1 = layers.Conv2D(32, 8, strides=4, activation="relu")(inputs)
-    layer2 = layers.Conv2D(64, 4, strides=2, activation="relu")(layer1)
-    layer3 = layers.Conv2D(64, 3, strides=1, activation="relu")(layer2)
-
-    layer4 = layers.Flatten()(layer3)
-
-    layer5 = layers.Dense(512, activation="relu")(layer4)
+    layer1 = layers.Flatten()(inputs)
+    layer2 = layers.Dense(32, activation="relu")(layer1)
+    layer3 = layers.Dense(64, activation="relu")(layer2)
+    layer4 = layers.Dense(64, activation="relu")(layer3)
+    layer5 = layers.Dense(32, activation="relu")(layer4)
     action = layers.Dense(num_actions, activation="linear")(layer5)
 
     return keras.Model(inputs=inputs, outputs=action)
@@ -173,6 +170,7 @@ while True:  # Run until solved
 
         # Apply the sampled action in our environment
         state_next, reward, done, _ = env.step([action0,action1])
+        #print(np.array(state_next).shape)
         state_next = np.array(state_next)
 
         episode_reward[0] += reward[0]
