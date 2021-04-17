@@ -44,10 +44,10 @@ def create_q_model():
     inputs = layers.Input(shape=(2, 5, 3,))
 
     layer1 = layers.Flatten()(inputs)
-    layer2 = layers.Dense(32, activation="relu")(layer1)
-    layer3 = layers.Dense(64, activation="relu")(layer2)
-    layer4 = layers.Dense(64, activation="relu")(layer3)
-    layer5 = layers.Dense(32, activation="relu")(layer4)
+    layer2 = layers.Dense(30, activation="relu")(layer1)
+    layer3 = layers.Dense(60, activation="relu")(layer2)
+    layer4 = layers.Dense(30, activation="relu")(layer3)
+    layer5 = layers.Dense(15, activation="relu")(layer4)
     action = layers.Dense(num_actions, activation="linear")(layer5)
 
     return keras.Model(inputs=inputs, outputs=action)
@@ -170,11 +170,13 @@ while True:  # Run until solved
 
         # Apply the sampled action in our environment
         state_next, reward, done, _ = env.step([action0,action1])
-        #print(np.array(state_next).shape)
+        #print(reward)
         state_next = np.array(state_next)
-
-        episode_reward[0] += reward[0]
-        episode_reward[1] += reward[1]
+        
+        if reward[0] >= 1.0 or reward[0] <= -1.0:
+            episode_reward[0] += reward[0]
+        if reward[1] >= 1.0 or reward[1] <= -1.0:
+            episode_reward[1] += reward[1]
         
 
         # Save actions and states in replay buffer
@@ -203,6 +205,7 @@ while True:  # Run until solved
             # Build the updated Q-values for the sampled future states
             # Use the target model for stability
             future_rewards0 = model_targets[0].predict(state_next_sample0)
+            print(tf.reduce_max(future_rewards0, axis=1))
             # Q value = reward + discount factor * expected future reward
             updated_q_values0 = rewards_sample0 + gamma * tf.reduce_max(
                 future_rewards0, axis=1
@@ -217,7 +220,7 @@ while True:  # Run until solved
             with tf.GradientTape() as tape:
                 # Train the model on the states and updated Q-values
                 state_sample0 = tf.cast(state_sample0, tf.float32)
-                q_values = models[0](state_sample0)
+                q_values = models[0](state_sample0,training=True)
 
                 # Apply the masks to the Q-values to get the Q-value for action taken
                 q_action = tf.reduce_sum(tf.multiply(q_values, masks), axis=1)
@@ -254,7 +257,7 @@ while True:  # Run until solved
             with tf.GradientTape() as tape:
                 # Train the model on the states and updated Q-values
                 state_sample1 = tf.cast(state_sample1, tf.float32)
-                q_values = models[1](state_sample1)
+                q_values = models[1](state_sample0,training=True)
 
                 # Apply the masks to the Q-values to get the Q-value for action taken
                 q_action = tf.reduce_sum(tf.multiply(q_values, masks), axis=1)

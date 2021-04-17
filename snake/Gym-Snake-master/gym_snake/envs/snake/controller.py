@@ -69,16 +69,16 @@ class Controller():
             self.snakes[snake_idx] = None
             self.grid.cover(snake.head, snake.head_color) # Avoid miscount of grid.open_space
             self.grid.connect(snake.body.popleft(), snake.body[0], self.grid.SPACE_COLOR)
-            reward = -1
+            reward = -1.0
         # Check for reward
         elif self.grid.food_space(snake.head):
             self.grid.draw(snake.body[0], self.grid.BODY_COLOR) # Redraw tail
             self.grid.connect(snake.body[0], snake.body[1], self.grid.BODY_COLOR)
             self.grid.cover(snake.head, snake.head_color) # Avoid miscount of grid.open_space
-            reward = 1
+            reward = 1.0
             self.grid.new_food()
         else:
-            reward = 0
+            reward = 1/np.linalg.norm(self.grid.food_coord - snake.head)
             empty_coord = snake.body.popleft()
             self.grid.connect(empty_coord, snake.body[0], self.grid.SPACE_COLOR)
             self.grid.draw(snake.head, snake.head_color)
