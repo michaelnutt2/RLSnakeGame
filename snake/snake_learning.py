@@ -21,7 +21,8 @@ from tensorflow.keras import layers
 import pandas as pd 
 import random
 
-game_on = True
+game_on = False
+testing = True
 
 if game_on:
     from pyautogui import press
@@ -59,6 +60,8 @@ def create_q_model():
 
 def avoid_collision(state,snake,action):
     
+    saved_a = action
+    
     p_action = list(range(4))
                    
     if action == 3:
@@ -70,8 +73,10 @@ def avoid_collision(state,snake,action):
    
     while state[snake][action][2] == 1:
         p_action.remove(action)
+        if(len(p_action) == 0):
+                return saved_a
         action = np.random.choice(p_action)
-        print("Preventing death ", snake, "with action ", action)
+        #print("Preventing death ", snake, "with action ", action)
    
     if action == 0:
         action = 1
@@ -144,7 +149,7 @@ update_target_network = 500
 # Using huber loss for stability
 loss_function = keras.losses.Huber()
 
-if game_on == True:
+if testing or game_on == True:
     epsilon_random_frames = 0
     epsilon_greedy_frames = 1
     epsilon = 0.1
@@ -153,9 +158,11 @@ if game_on == True:
     models[1] = keras.models.load_model("snakeRL_5040_FINAL.keras")
     model_targets[0].set_weights(models[0].get_weights())
     model_targets[1].set_weights(models[1].get_weights())
+    max_memory_length = 100
 
 while True:  # Run until solved
     state = np.array(env.reset())
+    game_controller = env.controller
     episode_reward = [0,0]
     print("On episode: ", episode_count)
     for timestep in range(1, max_steps_per_episode):
@@ -165,6 +172,8 @@ while True:  # Run until solved
         if frame_count%1000 == 0:
             print(frame_count)
         #print(state.shape)
+        
+        state = game_controller.get_snake_info()
 
         # Use epsilon-greedy for exploration for snake 0
         if frame_count < epsilon_random_frames or epsilon > np.random.rand(1)[0]:
@@ -174,7 +183,7 @@ while True:  # Run until solved
             
             
             
-            if game_on == True: #No more random wall/body collision
+            if testing or game_on == True: #No more random wall/body collision
                action0 = avoid_collision(state,0,action0)
             
             if game_on == True:
@@ -223,7 +232,7 @@ while True:  # Run until solved
                 # Take random action
                 action1 = np.random.choice(num_actions)
                 
-                if True or game_on == True: #No more random wall/body collision
+                if testing or game_on == True: #No more random wall/body collision
                     action1 = avoid_collision(state,1,action1)
                    
             else:
@@ -278,7 +287,7 @@ while True:  # Run until solved
         state = state_next
 
         # Update every fourth frame and once batch size is over 32
-        if (game_on == False and frame_count % update_after_actions == 0 and len(done_history) > batch_size):
+        if not testing and (game_on == False and frame_count % update_after_actions == 0 and len(done_history) > batch_size):
 
             # Get indices of samples for replay buffers
             indices = np.random.choice(range(len(done_history)), size=batch_size)
@@ -359,7 +368,7 @@ while True:  # Run until solved
 
 
 
-        if game_on == False and frame_count % update_target_network == 0:
+        if not testing and game_on == False and frame_count % update_target_network == 0:
             # update the the target network with new weights
             model_targets[0].set_weights(models[0].get_weights())
             model_targets[1].set_weights(models[1].get_weights())
@@ -384,17 +393,17 @@ while True:  # Run until solved
     running_reward0 = np.mean(episode_reward_history[0])
     running_reward1 = np.mean(episode_reward_history[1])
 
-    if game_on == False and episode_count%10 == 0:   
+    if not testing and game_on == False and episode_count%10 == 0:   
         models[0].save("snake0_"+str(episode_count)+"_03.keras")
         models[1].save("snake1_"+str(episode_count)+"_03.keras")
 
     episode_count += 1
 
-    if game_on == False and (running_reward0 > 10 * 10):  # Condition to consider the task solved
+    if not testing and game_on == False and (running_reward0 > 10 * 10):  # Condition to consider the task solved
         print("Solved at episode {} with snake 0!".format(episode_count))
         break
     
-    if game_on == False and (running_reward1 > 10 * 10):  # Condition to consider the task solved
+    if not testing and game_on == False and (running_reward1 > 10 * 10):  # Condition to consider the task solved
         print("Solved at episode {} with snake 1!".format(episode_count))
         break
 
