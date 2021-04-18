@@ -69,13 +69,13 @@ class Controller():
             self.snakes[snake_idx] = None
             self.grid.cover(snake.head, snake.head_color) # Avoid miscount of grid.open_space
             self.grid.connect(snake.body.popleft(), snake.body[0], self.grid.SPACE_COLOR)
-            reward = -1.0
+            reward = -10.0
         # Check for reward
         elif self.grid.food_space(snake.head):
             self.grid.draw(snake.body[0], self.grid.BODY_COLOR) # Redraw tail
             self.grid.connect(snake.body[0], snake.body[1], self.grid.BODY_COLOR)
             self.grid.cover(snake.head, snake.head_color) # Avoid miscount of grid.open_space
-            reward = 1.0
+            reward = 10.0
             self.grid.new_food()
         else:
             reward = 1/np.linalg.norm(self.grid.food_coord - snake.head)
@@ -105,7 +105,7 @@ class Controller():
             agent = self.snakes[snake]
             if agent is not None :
                 H = agent.head
-                surr_coord = ( (H[0] + 1, H[1]), (H[0] - 1, H[1]), (H[0], H[1] + 1), (H[0], H[1] - 1) )
+                surr_coord = ( (H[0] + 1, H[1]), (H[0] - 1, H[1]), (H[0], H[1] + 1), (H[0], H[1] - 1) ) #right left down up
                 surr_info = []
             
                 for i in range(4):
@@ -131,7 +131,7 @@ class Controller():
                 surr_info.append(neg_1s)
                 surr_info.append(neg_1s)
                 surr_info.append(neg_1s)
-                surr_info.append(neg_1s)
+                surr_info.append([0,0,-1])
                 snake_info.append(surr_info)
             
         return snake_info

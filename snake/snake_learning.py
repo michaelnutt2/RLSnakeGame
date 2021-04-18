@@ -21,7 +21,7 @@ from tensorflow.keras import layers
 import pandas as pd 
 import random
 
-game_on = False
+game_on = True
 
 if game_on:
     from pyautogui import press
@@ -57,13 +57,31 @@ def create_q_model():
 
     return keras.Model(inputs=inputs, outputs=action)
 
-def avoid_collision(controller):
-    '''
-    Returns a list of the posible actions that the AI snake can take that will avoid collision with a wall or another snake
-    '''
-    # Get the snake object
-    # Get a list of the 3 surrounding coordinates of the head
-    # check for collision ()
+def avoid_collision(state,snake,action):
+    
+    p_action = list(range(4))
+                   
+    if action == 3:
+        action = 1
+    elif action == 0:
+        action = 3
+    elif action == 1:
+        action = 0
+   
+    while state[snake][action][2] == 1:
+        p_action.remove(action)
+        action = np.random.choice(p_action)
+        print("Preventing death ", snake, "with action ", action)
+   
+    if action == 0:
+        action = 1
+    elif action == 1:
+        action = 3
+    elif action == 3:
+        action = 0
+    
+    
+    return action
 
 
 # The first model makes the predictions for Q-values which are used to
@@ -115,7 +133,7 @@ frame_count = 0
 # Number of frames to take random action and observe output
 epsilon_random_frames = 5000
 # Number of frames for exploration
-epsilon_greedy_frames = 10000.0
+epsilon_greedy_frames = 1000000.0
 # Maximum replay length
 # Note: The Deepmind paper suggests 1000000 however this causes memory issues
 max_memory_length = 10000
@@ -126,6 +144,16 @@ update_target_network = 500
 # Using huber loss for stability
 loss_function = keras.losses.Huber()
 
+if game_on == True:
+    epsilon_random_frames = 0
+    epsilon_greedy_frames = 1
+    epsilon = 0.1
+    epsilon_min = 0.1
+    models[0] = keras.models.load_model("snakeRL_5040_FINAL.keras")
+    models[1] = keras.models.load_model("snakeRL_5040_FINAL.keras")
+    model_targets[0].set_weights(models[0].get_weights())
+    model_targets[1].set_weights(models[1].get_weights())
+
 while True:  # Run until solved
     state = np.array(env.reset())
     episode_reward = [0,0]
@@ -134,15 +162,21 @@ while True:  # Run until solved
         env.render(); #Adding this line would show the attempts
         # of the agent in a pop up window.
         frame_count += 1
-        
+        if frame_count%1000 == 0:
+            print(frame_count)
         #print(state.shape)
-
 
         # Use epsilon-greedy for exploration for snake 0
         if frame_count < epsilon_random_frames or epsilon > np.random.rand(1)[0]:
             # Take random action
             
             action0 = np.random.choice(num_actions)
+            
+            
+            
+            if game_on == True: #No more random wall/body collision
+               action0 = avoid_collision(state,0,action0)
+            
             if game_on == True:
                 press(dir_to_key[action0])
 
@@ -161,9 +195,24 @@ while True:  # Run until solved
             state_tensor = tf.expand_dims(state_tensor, 0)
             action_probs = models[0](state_tensor, training=False)
             # Take best action
-            print("Taking educated guess snake 0: ")
-            print(random.choice(pd.DataFrame(action_probs.numpy()[0]).nlargest(n=1,columns=[0],keep='all').index))
+            #print("Taking educated guess snake 0: ")
+            #print(random.choice(pd.DataFrame(action_probs.numpy()[0]).nlargest(n=1,columns=[0],keep='all').index))
+                    
+            
             action0 = random.choice(pd.DataFrame(action_probs.numpy()[0]).nlargest(n=1,columns=[0],keep='all').index)
+            
+            action0 = avoid_collision(state,0,action0)
+            
+            for p_a in range(4): #just grab the food lol
+                if state[0][p_a][2] == 2:
+                    action0 = p_a
+                    if action0 == 0:
+                       action0 = 1
+                    elif action0 == 1:
+                       action0 = 3
+                    elif action0 == 3:
+                       action0 = 0
+                    print("Forcing food 0 with action ", action0)
             
         # Use epsilon-greedy for exploration for snake 1
         if game_on == True:
@@ -173,6 +222,10 @@ while True:  # Run until solved
             if frame_count < epsilon_random_frames or epsilon > np.random.rand(1)[0]:
                 # Take random action
                 action1 = np.random.choice(num_actions)
+                
+                if True or game_on == True: #No more random wall/body collision
+                    action1 = avoid_collision(state,1,action1)
+                   
             else:
                 # Predict action Q-values
                 # From environment state
@@ -181,9 +234,22 @@ while True:  # Run until solved
                 state_tensor = tf.expand_dims(state_tensor, 0)
                 action_probs = models[1](state_tensor, training=False)
                 # Take best action
-                print("Taking educated guess snake 1: ")
-                print(random.choice(pd.DataFrame(action_probs.numpy()[0]).nlargest(n=1,columns=[0],keep='all').index))
+                #print("Taking educated guess snake 1: ")
+                #print(random.choice(pd.DataFrame(action_probs.numpy()[0]).nlargest(n=1,columns=[0],keep='all').index))
                 action1 = random.choice(pd.DataFrame(action_probs.numpy()[0]).nlargest(n=1,columns=[0],keep='all').index)
+                
+                action1 = avoid_collision(state,1,action1)
+                
+                for p_a in range(4): #just grab the food lol
+                    if state[1][p_a][2] == 2:
+                        action1 = p_a
+                        if action1 == 0:
+                           action1 = 1
+                        elif action1 == 1:
+                           action1 = 3
+                        elif action1 == 3:
+                           action1 = 0
+                        print("Forcing food 1 with action ", action1)
             
 
 
@@ -212,7 +278,7 @@ while True:  # Run until solved
         state = state_next
 
         # Update every fourth frame and once batch size is over 32
-        if game_on == False and frame_count % update_after_actions == 0 and len(done_history) > batch_size:
+        if (game_on == False and frame_count % update_after_actions == 0 and len(done_history) > batch_size):
 
             # Get indices of samples for replay buffers
             indices = np.random.choice(range(len(done_history)), size=batch_size)
@@ -240,7 +306,6 @@ while True:  # Run until solved
 
             # Create a mask so we only calculate loss on the updated Q-values
             masks = tf.one_hot(action_sample0, num_actions)
-
             with tf.GradientTape() as tape:
                 # Train the model on the states and updated Q-values
                 state_sample0 = tf.cast(state_sample0, tf.float32)
@@ -271,7 +336,7 @@ while True:  # Run until solved
             updated_q_values1 = rewards_sample1 + gamma * tf.reduce_max(
                 future_rewards1, axis=1
             )
-
+            #print(tf.reduce_max(future_rewards1, axis=1))
             # If final frame set the last value to -1
             updated_q_values1 = updated_q_values1 * (1 - done_sample1) - done_sample1
 
@@ -281,7 +346,7 @@ while True:  # Run until solved
             with tf.GradientTape() as tape:
                 # Train the model on the states and updated Q-values
                 state_sample1 = tf.cast(state_sample1, tf.float32)
-                q_values = models[1](state_sample0,training=True)
+                q_values = models[1](state_sample1,training=True)
 
                 # Apply the masks to the Q-values to get the Q-value for action taken
                 q_action = tf.reduce_sum(tf.multiply(q_values, masks), axis=1)
@@ -320,12 +385,16 @@ while True:  # Run until solved
     running_reward1 = np.mean(episode_reward_history[1])
 
     if game_on == False and episode_count%10 == 0:   
-        models[0].save("snake0_"+str(episode_count)+".keras")
-        models[1].save("snake1_"+str(episode_count)+".keras")
+        models[0].save("snake0_"+str(episode_count)+"_03.keras")
+        models[1].save("snake1_"+str(episode_count)+"_03.keras")
 
     episode_count += 1
 
-    if game_on == False and (running_reward0 > 40):  # Condition to consider the task solved
-        print("Solved at episode {}!".format(episode_count))
+    if game_on == False and (running_reward0 > 10 * 10):  # Condition to consider the task solved
+        print("Solved at episode {} with snake 0!".format(episode_count))
+        break
+    
+    if game_on == False and (running_reward1 > 10 * 10):  # Condition to consider the task solved
+        print("Solved at episode {} with snake 1!".format(episode_count))
         break
 
