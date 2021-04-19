@@ -154,8 +154,8 @@ if testing or game_on == True:
     epsilon_greedy_frames = 1
     epsilon = 0.1
     epsilon_min = 0.1
-    models[0] = keras.models.load_model("snake0_28500_03.keras")
-    models[1] = keras.models.load_model("snake1_28500_03.keras")
+    models[0] = keras.models.load_model("snake0_FINAL_03.keras")
+    models[1] = keras.models.load_model("snake1_FINAL_03.keras")
     model_targets[0].set_weights(models[0].get_weights())
     model_targets[1].set_weights(models[1].get_weights())
     max_memory_length = 100
