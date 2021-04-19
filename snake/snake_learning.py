@@ -186,7 +186,7 @@ while True:  # Run until solved
         if frame_count%1000 == 0:
             print(frame_count)
         
-        state = game_controller.get_snake_info()
+        state_c = game_controller.get_snake_info()
 
         # Use epsilon-greedy for exploration for snake 0
         if frame_count < epsilon_random_frames or epsilon > np.random.rand(1)[0]:
@@ -197,7 +197,7 @@ while True:  # Run until solved
             
             
             if testing or game_on == True: #No more random wall/body collision
-               action0 = avoid_collision(state,0,action0)
+               action0 = avoid_collision(state_c,0,action0)
             
             if game_on == True:
                 press(dir_to_key[action0])
@@ -223,10 +223,10 @@ while True:  # Run until solved
             
             action0 = random.choice(pd.DataFrame(action_probs.numpy()[0]).nlargest(n=1,columns=[0],keep='all').index)
             
-            action0 = avoid_collision(state,0,action0)
+            action0 = avoid_collision(state_c,0,action0)
             
             for p_a in range(4): #just grab the food lol
-                if state[0][p_a][2] == 2:
+                if state_c[0][p_a][2] == 2:
                     action0 = p_a
                     if action0 == 0:
                        action0 = 1
@@ -251,7 +251,11 @@ while True:  # Run until solved
             else:
                 # Predict action Q-values
                 # From environment state
-                state = tf.cast(state, tf.float32)
+                state1 = [[],[]]
+                state1[0] = state[1]
+                state1[1] = state[0]
+                
+                state1 = tf.cast(state1, tf.float32)
                 state_tensor = tf.convert_to_tensor(state)
                 state_tensor = tf.expand_dims(state_tensor, 0)
                 action_probs = models[1](state_tensor, training=False)
@@ -260,10 +264,10 @@ while True:  # Run until solved
                 #print(random.choice(pd.DataFrame(action_probs.numpy()[0]).nlargest(n=1,columns=[0],keep='all').index))
                 action1 = random.choice(pd.DataFrame(action_probs.numpy()[0]).nlargest(n=1,columns=[0],keep='all').index)
                 
-                action1 = avoid_collision(state,1,action1)
+                action1 = avoid_collision(state_c,1,action1)
                 
                 for p_a in range(4): #just grab the food lol
-                    if state[1][p_a][2] == 2:
+                    if state_c[1][p_a][2] == 2:
                         action1 = p_a
                         if action1 == 0:
                            action1 = 1
