@@ -58,6 +58,19 @@ def create_q_model():
 
     return keras.Model(inputs=inputs, outputs=action)
 
+def create_qRL_model():
+    # Network defined by the Deepmind paper, modified heavily
+    inputs = layers.Input(shape=(2, 5, 3,))
+
+    layer1 = layers.Flatten()(inputs)
+    layer2 = layers.Dense(30, activation="relu")(layer1)
+    layer3 = layers.Dense(60, activation="relu")(layer2)
+    layer4 = layers.Dense(60, activation="relu")(layer3)
+    layer5 = layers.Dense(30, activation="relu")(layer4)
+    action = layers.Dense(num_actions, activation="linear")(layer5)
+
+    return keras.Model(inputs=inputs, outputs=action)
+
 def avoid_collision(state,snake,action):
     
     saved_a = action
@@ -91,11 +104,11 @@ def avoid_collision(state,snake,action):
 
 # The first model makes the predictions for Q-values which are used to
 # make a action.
-models = [create_q_model(),create_q_model()]
+models = [create_qRL_model(),create_qRL_model()]
 # Build a target model for the prediction of future rewards.
 # The weights of a target model get updated every 10000 steps thus when the
 # loss between the Q-values is calculated the target Q-value is stable.
-model_targets = [create_q_model(),create_q_model()]
+model_targets = [create_qRL_model(),create_qRL_model()]
 
 
 # Construct Environment
@@ -149,13 +162,13 @@ update_target_network = 500
 # Using huber loss for stability
 loss_function = keras.losses.Huber()
 
-if testing or game_on == True:
+if testing or game_on:
     epsilon_random_frames = 0
     epsilon_greedy_frames = 1
     epsilon = 0.1
     epsilon_min = 0.1
-    models[0] = keras.models.load_model("snake0_FINAL_03.keras")
-    models[1] = keras.models.load_model("snake1_FINAL_03.keras")
+    models[1] = keras.models.load_model("snakeRL_5040_FINAL.keras")
+    models[0] = keras.models.load_model("snakeRL_5040_FINAL.keras")
     model_targets[0].set_weights(models[0].get_weights())
     model_targets[1].set_weights(models[1].get_weights())
     max_memory_length = 100
