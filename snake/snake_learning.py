@@ -50,7 +50,7 @@ def create_q_model():
     inputs = layers.Input(shape=(2, 5, 3,))
 
     layer1 = layers.Flatten()(inputs)
-    layer2 = layers.Dense(30, activation="relu")(layer1)
+    layer2 = layers.Dense(120, activation="relu")(layer1)
     layer3 = layers.Dense(60, activation="relu")(layer2)
     layer4 = layers.Dense(60, activation="relu")(layer3)
     layer5 = layers.Dense(30, activation="relu")(layer4)
@@ -136,7 +136,7 @@ running_reward = [[],[]]
 episode_count = 0
 frame_count = 0
 # Number of frames to take random action and observe output
-epsilon_random_frames = 5000
+epsilon_random_frames = 50000
 # Number of frames for exploration
 epsilon_greedy_frames = 1000000.0
 # Maximum replay length
@@ -154,8 +154,8 @@ if testing or game_on == True:
     epsilon_greedy_frames = 1
     epsilon = 0.1
     epsilon_min = 0.1
-    models[0] = keras.models.load_model("snakeRL_5040_FINAL.keras")
-    models[1] = keras.models.load_model("snakeRL_5040_FINAL.keras")
+    models[0] = keras.models.load_model("snake0_28500_03.keras")
+    models[1] = keras.models.load_model("snake1_28500_03.keras")
     model_targets[0].set_weights(models[0].get_weights())
     model_targets[1].set_weights(models[1].get_weights())
     max_memory_length = 100
@@ -166,12 +166,12 @@ while True:  # Run until solved
     episode_reward = [0,0]
     print("On episode: ", episode_count)
     for timestep in range(1, max_steps_per_episode):
-        env.render(); #Adding this line would show the attempts
+        if not game_on and testing:
+            env.render(); #Adding this line would show the attempts
         # of the agent in a pop up window.
         frame_count += 1
         if frame_count%1000 == 0:
             print(frame_count)
-        #print(state.shape)
         
         state = game_controller.get_snake_info()
 
@@ -399,11 +399,15 @@ while True:  # Run until solved
 
     episode_count += 1
 
-    if not testing and game_on == False and (running_reward0 > 10 * 10):  # Condition to consider the task solved
+    if not testing and game_on == False and (running_reward0 > 10 * 20):  # Condition to consider the task solved
         print("Solved at episode {} with snake 0!".format(episode_count))
+        models[0].save("snake0_"+str(episode_count)+"_03_done.keras")
+        models[1].save("snake1_"+str(episode_count)+"_03_done.keras")
         break
     
-    if not testing and game_on == False and (running_reward1 > 10 * 10):  # Condition to consider the task solved
+    if not testing and game_on == False and (running_reward1 > 10 * 20):  # Condition to consider the task solved
         print("Solved at episode {} with snake 1!".format(episode_count))
+        models[0].save("snake0_"+str(episode_count)+"_03_done.keras")
+        models[1].save("snake1_"+str(episode_count)+"_03_done.keras")
         break
 
