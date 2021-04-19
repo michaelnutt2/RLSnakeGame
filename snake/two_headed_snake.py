@@ -22,7 +22,7 @@ display = pygame.display.set_mode((display_width, display_height))
 clock = pygame.time.Clock()
 font_style = pygame.font.SysFont("banschrift", 25)
 score_font = pygame.font.SysFont("freesans", 35)
-snake_block = 20
+snake_block = 30
 snake_speed = 15
 hum_input = 0   # human input to be read by model
 
