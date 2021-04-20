@@ -1,10 +1,191 @@
+'''
+Preparing Gym Environment
+'''
+import gym
+from snake_learning import loop
+
+env_dict = gym.envs.registration.registry.env_specs.copy()
+
+
+for env in env_dict:
+    if 'snake-plural-v0' in env:
+        print("Remove {} from registry".format(env))
+        del gym.envs.registration.registry.env_specs[env]
+    if 'snake-v0' in env:
+        print("Remove {} from registry".format(env))
+        del gym.envs.registration.registry.env_specs[env]
+ 
+
+import Gym_Snake_master.gym_snake
+import numpy as np
+import tensorflow as tf
+from tensorflow import keras
+from tensorflow.keras import layers
+import pandas as pd 
+import random
+
+game_on = True
+testing = False
+
+if game_on:
+    from pyautogui import press
+
+tf.executing_eagerly()
+
+# Configuration paramaters for the whole setup
+seed = 42
+gamma = 0.99  # Discount factor for past rewards
+epsilon = 1.0  # Epsilon greedy parameter
+epsilon_min = 0.1  # Minimum epsilon greedy parameter
+epsilon_max = 1.0  # Maximum epsilon greedy parameter
+epsilon_interval = (
+    epsilon_max - epsilon_min
+)  # Rate at which to reduce chance of random action being taken
+batch_size = 32  # Size of batch taken from replay buffer
+max_steps_per_episode = 100000000000
+
+num_actions = 4
+dir_to_key = {0:'w', 1:'d',2:'s',3:'a'}
+
+def create_q_model():
+    # Network defined by the Deepmind paper, modified heavily
+    inputs = layers.Input(shape=(2, 5, 3,))
+
+    layer1 = layers.Flatten()(inputs)
+    layer2 = layers.Dense(120, activation="relu")(layer1)
+    layer3 = layers.Dense(60, activation="relu")(layer2)
+    layer4 = layers.Dense(60, activation="relu")(layer3)
+    layer5 = layers.Dense(30, activation="relu")(layer4)
+    action = layers.Dense(num_actions, activation="linear")(layer5)
+
+    return keras.Model(inputs=inputs, outputs=action)
+
+def create_qRL_model():
+    # Network defined by the Deepmind paper, modified heavily
+    inputs = layers.Input(shape=(2, 5, 3,))
+
+    layer1 = layers.Flatten()(inputs)
+    layer2 = layers.Dense(30, activation="relu")(layer1)
+    layer3 = layers.Dense(60, activation="relu")(layer2)
+    layer4 = layers.Dense(60, activation="relu")(layer3)
+    layer5 = layers.Dense(30, activation="relu")(layer4)
+    action = layers.Dense(num_actions, activation="linear")(layer5)
+
+    return keras.Model(inputs=inputs, outputs=action)
+
+def avoid_collision(state,snake,action):
+    
+    saved_a = action
+    
+    p_action = list(range(4))
+                   
+    if action == 3:
+        action = 1
+    elif action == 0:
+        action = 3
+    elif action == 1:
+        action = 0
+   
+    while state[snake][action][2] == 1:
+        p_action.remove(action)
+        if(len(p_action) == 0):
+                return saved_a
+        action = np.random.choice(p_action)
+        #print("Preventing death ", snake, "with action ", action)
+   
+    if action == 0:
+        action = 1
+    elif action == 1:
+        action = 3
+    elif action == 3:
+        action = 0
+    
+    
+    return action
+
+
+# The first model makes the predictions for Q-values which are used to
+# make a action.
+models = [create_qRL_model(),create_qRL_model()]
+# Build a target model for the prediction of future rewards.
+# The weights of a target model get updated every 10000 steps thus when the
+# loss between the Q-values is calculated the target Q-value is stable.
+model_targets = [create_qRL_model(),create_qRL_model()]
+
+
+# Construct Environment
+env = gym.make('snake-plural-v0')
+env.grid_size = [20,20]
+env.unit_size = 10
+env.unit_gap = 0
+env.snake_size = 5
+env.n_snakes = 2
+env.n_foods = 1
+observation = env.reset() # Constructs an instance of the game
+
+# Controller
+game_controller = env.controller
+
+# Grid
+grid_object = game_controller.grid
+grid_pixels = grid_object.grid
+
+# Snake(s)
+snakes_array = game_controller.snakes
+snake_object1 = snakes_array[0]
+
+# Training
+
+# In the Deepmind paper they use RMSProp however then Adam optimizer
+# improves training time
+optimizer = keras.optimizers.Adam(learning_rate=0.00025, clipnorm=1.0)
+
+# Experience replay buffers
+action_history = []
+state_history = []
+state_next_history = []
+rewards_history = []
+done_history = []
+episode_reward_history = [[],[]]
+running_reward = [[],[]]
+episode_count = 0
+frame_count = 0
+# Number of frames to take random action and observe output
+epsilon_random_frames = 50000
+# Number of frames for exploration
+epsilon_greedy_frames = 1000000.0
+# Maximum replay length
+# Note: The Deepmind paper suggests 1000000 however this causes memory issues
+max_memory_length = 10000
+# Train the model after 4 actions
+update_after_actions = 4
+# How often to update the target network
+update_target_network = 500
+# Using huber loss for stability
+loss_function = keras.losses.Huber()
+
+
+epsilon_random_frames = 0
+epsilon_greedy_frames = 1
+epsilon = 0.1
+epsilon_min = 0.1
+models[1] = keras.models.load_model("snakeRL_5040_FINAL.keras")
+models[0] = keras.models.load_model("snakeRL_5040_FINAL.keras")
+model_targets[0].set_weights(models[0].get_weights())
+model_targets[1].set_weights(models[1].get_weights())
+max_memory_length = 100
+
+state = np.array(env.reset())
+game_controller = env.controller
+episode_reward = [0,0]
+
+
 """
 Running the game
 """
 
 import pygame
 import random
-from snake_learning import loop
 pygame.init()
 
 bg = (150, 150, 150)
@@ -110,7 +291,7 @@ def game_loop():
                     if event.key == pygame.K_p:
                         game_loop()
 
-        loop()
+        loop(hum_input)
 
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
