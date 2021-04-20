@@ -173,11 +173,7 @@ if testing or game_on:
     model_targets[1].set_weights(models[1].get_weights())
     max_memory_length = 100
 
-while True:  # Run until solved
-    state = np.array(env.reset())
-    game_controller = env.controller
-    episode_reward = [0,0]
-    print("On episode: ", episode_count)
+def loop():
     for timestep in range(1, max_steps_per_episode):
         if not game_on and testing:
             env.render(); #Adding this line would show the attempts
@@ -401,6 +397,14 @@ while True:  # Run until solved
 
         if done:
             break
+
+while True:  # Run until solved
+    state = np.array(env.reset())
+    game_controller = env.controller
+    episode_reward = [0,0]
+    print("On episode: ", episode_count)
+    
+    loop()
 
     # Update running reward to check condition for solving
     episode_reward_history[0].append(episode_reward[0])

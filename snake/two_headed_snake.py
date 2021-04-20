@@ -4,6 +4,7 @@ Running the game
 
 import pygame
 import random
+from snake_learning import loop
 pygame.init()
 
 bg = (150, 150, 150)
@@ -75,7 +76,6 @@ def message(msg, color):
 
 
 def game_loop():
-    # TODO rework to take input to determine if players or ai
     player_one = Snake(True, player_one_keys)
     player_two = Snake(False, player_two_keys)
     game_over = False
@@ -109,6 +109,8 @@ def game_loop():
                         game_close = False
                     if event.key == pygame.K_p:
                         game_loop()
+
+        loop()
 
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
