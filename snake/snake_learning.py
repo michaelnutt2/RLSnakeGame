@@ -2,7 +2,7 @@ import gym
 
 env_dict = gym.envs.registration.registry.env_specs.copy()
 
-game_on = True
+game_on = False
 
 for env in env_dict:
     if 'snake-plural-v0' in env:
@@ -22,7 +22,7 @@ import pandas as pd
 import random
 
 
-testing = False
+testing = True
 
 if game_on:
     from pyautogui import press

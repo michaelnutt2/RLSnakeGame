@@ -118,7 +118,7 @@ env = gym.make('snake-plural-v0')
 env.grid_size = [20,20]
 env.unit_size = 10
 env.unit_gap = 0
-env.snake_size = 5
+env.snake_size = 2
 env.n_snakes = 2
 env.n_foods = 1
 observation = env.reset() # Constructs an instance of the game
@@ -184,9 +184,10 @@ def loop(hum_input,state,epsilon,epsilon_random_frames,epsilon_min):
     if not game_on and testing:
         env.render(); #Adding this line would show the attempts
     # of the agent in a pop up window.
-    #frame_count += 1
+    frame_count = 10
     if frame_count%1000 == 0:
-        print(frame_count)
+        pass
+        #print(frame_count)
     
     state_c = game_controller.get_snake_info()
 
@@ -197,12 +198,12 @@ def loop(hum_input,state,epsilon,epsilon_random_frames,epsilon_min):
         action0 = np.random.choice(num_actions)
         
         
-        
         if testing or game_on == True: #No more random wall/body collision
             action0 = avoid_collision(state_c,0,action0)
         
         if game_on == True:
-            press(dir_to_key[action0])
+            pass
+            #press(dir_to_key[action0])
 
         #TODO: Input the action of the player 2 human
         
@@ -242,6 +243,7 @@ def loop(hum_input,state,epsilon,epsilon_random_frames,epsilon_min):
     if game_on == True:
         # Human player input = action 1
         action1 = hum_input
+        #print(action1)
     else:
         if frame_count < epsilon_random_frames or epsilon > np.random.rand(1)[0]:
             # Take random action
@@ -400,6 +402,8 @@ def loop(hum_input,state,epsilon,epsilon_random_frames,epsilon_min):
         del state_next_history[:1]
         del action_history[:1]
         del done_history[:1]
+        
+    return action0
 
 #####################################################
 
@@ -421,21 +425,21 @@ red = (213, 50, 80)
 outer = (100, 100, 200)
 
 display_width = 600
-display_hwidth = 300
+display_hwidth = 600
 display_height = 600
-display_hheight = 200
+display_hheight = 600
 display = pygame.display.set_mode((display_width, display_height))
 clock = pygame.time.Clock()
 font_style = pygame.font.SysFont("banschrift", 25)
 score_font = pygame.font.SysFont("freesans", 35)
 snake_block = 30
-snake_speed = 15
-hum_input = 0   # human input to be read by model
+snake_speed = 10
+
+hum_input = -1   # human input to be read by model
 
 
 player_one_keys = [pygame.K_w, pygame.K_a, pygame.K_s, pygame.K_d]   # AI
 player_two_keys = [pygame.K_UP, pygame.K_LEFT, pygame.K_DOWN, pygame.K_RIGHT]  # Human
-
 
 class Snake:
     def __init__(self, ai, keys):
@@ -447,18 +451,42 @@ class Snake:
 
 def update_move(player, event, is_hum = False):
     # If the player is human, then update the global human input as well
-    if event == player.key_list[0]:    # w/UP
-        if is_hum: hum_input = 0
-        return 0, -snake_block              # x_change, y_change
-    elif event == player.key_list[1]:  # a/LEFT
-        if is_hum: hum_input = 3
-        return -snake_block, 0
-    elif event == player.key_list[2]:  # s/DOWN
-        if is_hum: hum_input = 2
-        return 0, snake_block
-    elif event == player.key_list[3]:  # d/RIGHT
-        if is_hum: hum_input = 1
-        return snake_block, 0
+    global hum_input
+    if is_hum:
+        if event == player.key_list[0]:    # w/UP
+            if is_hum: 
+                hum_input = 0
+            return 0, -snake_block              # x_change, y_change
+        elif event == player.key_list[1]:  # a/LEFT
+            if is_hum:
+                hum_input = 3
+            return -snake_block, 0
+        elif event == player.key_list[2]:  # s/DOWN
+            if is_hum:
+                hum_input = 2
+            return 0, snake_block
+        elif event == player.key_list[3]:  # d/RIGHT
+            if is_hum: 
+                hum_input = 1
+            return snake_block, 0
+    else :
+        if event == 0:    # w/UP
+            if is_hum: 
+                hum_input = 0
+            return 0, -snake_block              # x_change, y_change
+        elif event == 3:  # a/LEFT
+            if is_hum:
+                hum_input = 3
+            return -snake_block, 0
+        elif event == 2:  # s/DOWN
+            if is_hum:
+                hum_input = 2
+            return 0, snake_block
+        elif event == 1:  # d/RIGHT
+            if is_hum: 
+                hum_input = 1
+            return snake_block, 0
+        
 
 
 def the_score(p1_score, p2_score):
@@ -480,22 +508,36 @@ def message(msg, color):
     display.blit(mesg, [int(display_width / 6), int(display_height / 3)])
 
 
+def taunt(taunts, color):
+    select = random.randint(0,len(taunts)-1)
+    selected = taunts[select]
+    print(selected)
+    message(selected, color)
+
 def game_loop():
+    
+    
+    
+    global game_controller
+    global state
+    global hum_input
     
     player_one = Snake(True, player_one_keys)
     player_two = Snake(False, player_two_keys)
     game_over = False
     game_close = False
-    p1_x = display_width * (1/3)
-    p2_x = display_width * (2/3)
-    p1_y = display_height / 2
-    p2_y = display_height / 2
+    p1_x = snake_block * game_controller.snakes[0].head[0]
+    p2_x = snake_block * game_controller.snakes[1].head[0]
+    p1_y = snake_block * game_controller.snakes[0].head[1]
+    p2_y = snake_block * game_controller.snakes[1].head[1]
     p1_x_change = 0
     p2_x_change = 0
     p1_y_change = 0
     p2_y_change = 0
-    foodx = snake_block * random.randint(0, (display_width / snake_block) - 1)
-    foody = snake_block * random.randint(0, (display_height / snake_block) - 1)
+    foodx = game_controller.grid.food_coord[0] * snake_block
+    foody = game_controller.grid.food_coord[1] * snake_block
+    print("food_coord ", foody)
+    
     gTaunts = bTaunts = nTaunts = []
     with open("BadTaunts.csv", 'r+') as i_f:
         while True:
@@ -520,7 +562,7 @@ def game_loop():
         while game_close:
             display.fill(bg)
             # Placeholder to get single player snake working
-            message("You lost, press P to play again or Q to quit", red)
+            message("Game over, press P to play again or Q to quit", red)
             the_score(player_one.length, player_two.length)
             pygame.display.update()
 
@@ -533,18 +575,32 @@ def game_loop():
                         game_over = True
                         game_close = False
                     if event.key == pygame.K_p:
+                        state = np.array(env.reset())
+                        hum_input = -1
+                        game_controller = env.controller
                         game_loop()
+                        
+        foodx = game_controller.grid.food_coord[0] * snake_block
+        foody = game_controller.grid.food_coord[1] * snake_block
+            
 
-        loop(hum_input,state,epsilon,epsilon_random_frames,epsilon_min)
 
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 game_over = True
             if event.type == pygame.KEYDOWN:
                 if event.key in player_one_keys:
-                    p1_x_change, p1_y_change = update_move(player_one, event.key)
+                    #p1_x_change, p1_y_change = update_move(player_one, event.key)
+                    pass
                 elif event.key in player_two_keys:
+                    #print(hum_input)
                     p2_x_change, p2_y_change = update_move(player_two, event.key, True)
+                    
+        if hum_input != -1:
+            action = loop(hum_input,state,epsilon,epsilon_random_frames,epsilon_min)
+            p1_x_change, p1_y_change = update_move(player_one, action, False)
+        
+
 
         if p1_x >= display_width or p1_x < 0 or p1_y >= display_height or p1_y < 0:
             game_close = True
@@ -582,8 +638,10 @@ def game_loop():
         pygame.display.update()
 
         if p1_x == foodx and p1_y == foody:
-            foodx = snake_block * random.randint(0, (display_width / snake_block) - 1)
-            foody = snake_block * random.randint(0, (display_height / snake_block) - 1)
+            game_controller.grid.new_food()
+            foodx = game_controller.grid.food_coord[0] * snake_block
+            foody = game_controller.grid.food_coord[1] * snake_block
+            
             player_one.length += 1
             # Hannah
             if player_one.length == player_two.length:
@@ -592,8 +650,9 @@ def game_loop():
                 taunt(gTaunts, 'green')
             ####
         elif p2_x == foodx and p2_y == foody:
-            foodx = snake_block * random.randint(0, (display_width / snake_block) - 1)
-            foody = snake_block * random.randint(0, (display_height / snake_block) - 1)
+            game_controller.grid.new_food()
+            foodx = game_controller.grid.food_coord[0] * snake_block
+            foody = game_controller.grid.food_coord[1] * snake_block
             player_two.length += 1
             # Hannah
             if player_one.length == player_two.length:
@@ -607,7 +666,3 @@ def game_loop():
 
 game_loop()
 
-def taunt(taunts, color):
-    select = random.randint(0,len(taunts))
-    selected = taunts[select]
-    message(selected, color)
