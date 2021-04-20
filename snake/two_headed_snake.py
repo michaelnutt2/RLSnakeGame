@@ -90,6 +90,25 @@ def game_loop():
     p2_y_change = 0
     foodx = snake_block * random.randint(0, (display_width / snake_block) - 1)
     foody = snake_block * random.randint(0, (display_height / snake_block) - 1)
+    gTaunts = bTaunts = nTaunts = []
+    with open("BadTaunts.csv", 'r+') as i_f:
+        while true:
+            line = i_f.readline()
+            if line == "" :
+                    break
+            bTaunts.append(line)
+    with open("NeutralTaunts.csv", 'r+') as i_f:
+        while true:
+            line = i_f.readline()
+            if line == "" :
+                    break
+            nTaunts.append(line)
+    with open("GoodTaunts.csv", 'r+') as i_f:
+        while true:
+            line = i_f.readline()
+            if line == "" :
+                    break
+            gTaunts.append(line)
 
     while not game_over:
         while game_close:
@@ -158,13 +177,29 @@ def game_loop():
             foodx = snake_block * random.randint(0, (display_width / snake_block) - 1)
             foody = snake_block * random.randint(0, (display_height / snake_block) - 1)
             player_one.length += 1
+            # Hannah
+            if player_one.length == player_two.length:
+                taunt(nTaunts, 'blue')
+            else:
+                taunt(gTaunts, 'green')
+            ####
         elif p2_x == foodx and p2_y == foody:
             foodx = snake_block * random.randint(0, (display_width / snake_block) - 1)
             foody = snake_block * random.randint(0, (display_height / snake_block) - 1)
             player_two.length += 1
-
+            # Hannah
+            if player_one.length == player_two.length:
+                taunt(nTaunts, 'yellow')
+            else:
+                taunt(bTaunts, 'red')
+            ####
         clock.tick(snake_speed)
     pygame.quit()
 
 
 game_loop()
+
+def taunt(taunts, color):
+    select = random.randint(0,len(taunts))
+    selected = taunts[select]
+    message(selected, color)
