@@ -13,7 +13,7 @@ for env in env_dict:
  
 
 
-import gym_snake
+import Gym_Snake_master.gym_snake
 import numpy as np
 import tensorflow as tf
 from tensorflow import keras
@@ -21,7 +21,7 @@ from tensorflow.keras import layers
 import pandas as pd 
 import random
 
-game_on = False
+game_on = True
 testing = True
 
 if game_on:
