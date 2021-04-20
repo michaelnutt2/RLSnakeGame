@@ -2,7 +2,7 @@
 Preparing Gym Environment
 '''
 import gym
-from snake_learning import loop
+#from snake_learning import loop
 
 env_dict = gym.envs.registration.registry.env_specs.copy()
 
@@ -16,7 +16,7 @@ for env in env_dict:
         del gym.envs.registration.registry.env_specs[env]
  
 
-import Gym_Snake_master.gym_snake
+import gym_snake
 import numpy as np
 import tensorflow as tf
 from tensorflow import keras
@@ -179,6 +179,230 @@ state = np.array(env.reset())
 game_controller = env.controller
 episode_reward = [0,0]
 
+########################################################################
+def loop(hum_input,state,epsilon,epsilon_random_frames,epsilon_min):
+    if not game_on and testing:
+        env.render(); #Adding this line would show the attempts
+    # of the agent in a pop up window.
+    #frame_count += 1
+    if frame_count%1000 == 0:
+        print(frame_count)
+    
+    state_c = game_controller.get_snake_info()
+
+    # Use epsilon-greedy for exploration for snake 0
+    if frame_count < epsilon_random_frames or epsilon > np.random.rand(1)[0]:
+        # Take random action
+        
+        action0 = np.random.choice(num_actions)
+        
+        
+        
+        if testing or game_on == True: #No more random wall/body collision
+            action0 = avoid_collision(state_c,0,action0)
+        
+        if game_on == True:
+            press(dir_to_key[action0])
+
+        #TODO: Input the action of the player 2 human
+        
+
+        #TODO: Add algorithm to avoid walls and direct towards food
+
+
+    else:
+        # Predict action Q-values
+        # From environment state
+        
+        state = tf.cast(state, tf.float32)
+        state_tensor = tf.convert_to_tensor(state)
+        state_tensor = tf.expand_dims(state_tensor, 0)
+        action_probs = models[0](state_tensor, training=False)
+        # Take best action
+        #print("Taking educated guess snake 0: ")
+        #print(random.choice(pd.DataFrame(action_probs.numpy()[0]).nlargest(n=1,columns=[0],keep='all').index))
+                
+        
+        action0 = random.choice(pd.DataFrame(action_probs.numpy()[0]).nlargest(n=1,columns=[0],keep='all').index)
+        
+        action0 = avoid_collision(state_c,0,action0)
+        
+        for p_a in range(4): #just grab the food lol
+            if state_c[0][p_a][2] == 2:
+                action0 = p_a
+                if action0 == 0:
+                    action0 = 1
+                elif action0 == 1:
+                    action0 = 3
+                elif action0 == 3:
+                    action0 = 0
+                print("Forcing food 0 with action ", action0)
+        
+    # Use epsilon-greedy for exploration for snake 1
+    if game_on == True:
+        # Human player input = action 1
+        action1 = hum_input
+    else:
+        if frame_count < epsilon_random_frames or epsilon > np.random.rand(1)[0]:
+            # Take random action
+            action1 = np.random.choice(num_actions)
+            
+            if testing or game_on == True: #No more random wall/body collision
+                action1 = avoid_collision(state,1,action1)
+                
+        else:
+            # Predict action Q-values
+            # From environment state
+            state1 = [[],[]]
+            state1[0] = state[1]
+            state1[1] = state[0]
+            
+            state1 = tf.cast(state1, tf.float32)
+            state_tensor = tf.convert_to_tensor(state)
+            state_tensor = tf.expand_dims(state_tensor, 0)
+            action_probs = models[1](state_tensor, training=False)
+            # Take best action
+            #print("Taking educated guess snake 1: ")
+            #print(random.choice(pd.DataFrame(action_probs.numpy()[0]).nlargest(n=1,columns=[0],keep='all').index))
+            action1 = random.choice(pd.DataFrame(action_probs.numpy()[0]).nlargest(n=1,columns=[0],keep='all').index)
+            
+            action1 = avoid_collision(state_c,1,action1)
+            
+            for p_a in range(4): #just grab the food lol
+                if state_c[1][p_a][2] == 2:
+                    action1 = p_a
+                    if action1 == 0:
+                        action1 = 1
+                    elif action1 == 1:
+                        action1 = 3
+                    elif action1 == 3:
+                        action1 = 0
+                    print("Forcing food 1 with action ", action1)
+        
+
+
+
+    # Decay probability of taking random action
+    epsilon -= epsilon_interval / epsilon_greedy_frames
+    epsilon = max(epsilon, epsilon_min)
+
+    # Apply the sampled action in our environment
+    state_next, reward, done, _ = env.step([action0,action1])
+    #print(reward)
+    state_next = np.array(state_next)
+    
+    if reward[0] >= 1.0 or reward[0] <= -1.0:
+        episode_reward[0] += reward[0]
+    if reward[1] >= 1.0 or reward[1] <= -1.0:
+        episode_reward[1] += reward[1]
+    
+
+    # Save actions and states in replay buffer
+    action_history.append([action0,action1])
+    state_history.append(state)
+    state_next_history.append(state_next)
+    done_history.append(done)
+    rewards_history.append(reward)
+    state = state_next
+
+    # Update every fourth frame and once batch size is over 32
+    if not testing and (game_on == False and frame_count % update_after_actions == 0 and len(done_history) > batch_size):
+
+        # Get indices of samples for replay buffers
+        indices = np.random.choice(range(len(done_history)), size=batch_size)
+
+        # Using list comprehension to sample from replay buffer snake 0
+        state_sample0 = np.array([state_history[i] for i in indices])
+        state_next_sample0 = np.array([state_next_history[i] for i in indices])
+        rewards_sample0 = [rewards_history[i][0] for i in indices]
+        action_sample0 = [action_history[i][0] for i in indices]
+        done_sample0 = tf.convert_to_tensor(
+            [float(done_history[i]) for i in indices]
+        )
+        
+        # Build the updated Q-values for the sampled future states
+        # Use the target model for stability
+        future_rewards0 = model_targets[0].predict(state_next_sample0)
+        #print(tf.reduce_max(future_rewards0, axis=1))
+        # Q value = reward + discount factor * expected future reward
+        updated_q_values0 = rewards_sample0 + gamma * tf.reduce_max(
+            future_rewards0, axis=1
+        )
+
+        # If final frame set the last value to -1
+        updated_q_values0 = updated_q_values0 * (1 - done_sample0) - done_sample0
+
+        # Create a mask so we only calculate loss on the updated Q-values
+        masks = tf.one_hot(action_sample0, num_actions)
+        with tf.GradientTape() as tape:
+            # Train the model on the states and updated Q-values
+            state_sample0 = tf.cast(state_sample0, tf.float32)
+            q_values = models[0](state_sample0,training=True)
+
+            # Apply the masks to the Q-values to get the Q-value for action taken
+            q_action = tf.reduce_sum(tf.multiply(q_values, masks), axis=1)
+            # Calculate loss between new Q-value and old Q-value
+            loss = loss_function(updated_q_values0, q_action)
+
+        # Backpropagation
+        grads = tape.gradient(loss, models[0].trainable_variables)
+        optimizer.apply_gradients(zip(grads, models[0].trainable_variables))
+        
+        # Using list comprehension to sample from replay buffer snake 1
+        state_sample1 = np.array([state_history[i] for i in indices])
+        state_next_sample1 = np.array([state_next_history[i] for i in indices])
+        rewards_sample1 = [rewards_history[i][1] for i in indices]
+        action_sample1 = [action_history[i][1] for i in indices]
+        done_sample1 = tf.convert_to_tensor(
+            [float(done_history[i]) for i in indices]
+        )
+        
+        # Build the updated Q-values for the sampled future states
+        # Use the target model for stability
+        future_rewards1 = model_targets[1].predict(state_next_sample1)
+        # Q value = reward + discount factor * expected future reward
+        updated_q_values1 = rewards_sample1 + gamma * tf.reduce_max(
+            future_rewards1, axis=1
+        )
+        #print(tf.reduce_max(future_rewards1, axis=1))
+        # If final frame set the last value to -1
+        updated_q_values1 = updated_q_values1 * (1 - done_sample1) - done_sample1
+
+        # Create a mask so we only calculate loss on the updated Q-values
+        masks = tf.one_hot(action_sample1, num_actions)
+        
+        with tf.GradientTape() as tape:
+            # Train the model on the states and updated Q-values
+            state_sample1 = tf.cast(state_sample1, tf.float32)
+            q_values = models[1](state_sample1,training=True)
+
+            # Apply the masks to the Q-values to get the Q-value for action taken
+            q_action = tf.reduce_sum(tf.multiply(q_values, masks), axis=1)
+            # Calculate loss between new Q-value and old Q-value
+            loss = loss_function(updated_q_values1, q_action)
+
+        # Backpropagation
+        grads = tape.gradient(loss, models[1].trainable_variables)
+        optimizer.apply_gradients(zip(grads, models[1].trainable_variables))
+
+
+
+    if not testing and game_on == False and frame_count % update_target_network == 0:
+        # update the the target network with new weights
+        model_targets[0].set_weights(models[0].get_weights())
+        model_targets[1].set_weights(models[1].get_weights())
+
+
+    # Limit the state and reward history
+    if len(rewards_history) > max_memory_length:
+        del rewards_history[:1]
+        del state_history[:1]
+        del state_next_history[:1]
+        del action_history[:1]
+        del done_history[:1]
+
+#####################################################
+
 
 """
 Running the game
@@ -257,6 +481,7 @@ def message(msg, color):
 
 
 def game_loop():
+    
     player_one = Snake(True, player_one_keys)
     player_two = Snake(False, player_two_keys)
     game_over = False
@@ -273,19 +498,19 @@ def game_loop():
     foody = snake_block * random.randint(0, (display_height / snake_block) - 1)
     gTaunts = bTaunts = nTaunts = []
     with open("BadTaunts.csv", 'r+') as i_f:
-        while true:
+        while True:
             line = i_f.readline()
             if line == "" :
                     break
             bTaunts.append(line)
     with open("NeutralTaunts.csv", 'r+') as i_f:
-        while true:
+        while True:
             line = i_f.readline()
             if line == "" :
                     break
             nTaunts.append(line)
     with open("GoodTaunts.csv", 'r+') as i_f:
-        while true:
+        while True:
             line = i_f.readline()
             if line == "" :
                     break
@@ -310,7 +535,7 @@ def game_loop():
                     if event.key == pygame.K_p:
                         game_loop()
 
-        loop(hum_input)
+        loop(hum_input,state,epsilon,epsilon_random_frames,epsilon_min)
 
         for event in pygame.event.get():
             if event.type == pygame.QUIT:

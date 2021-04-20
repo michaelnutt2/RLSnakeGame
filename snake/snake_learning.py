@@ -2,6 +2,7 @@ import gym
 
 env_dict = gym.envs.registration.registry.env_specs.copy()
 
+game_on = True
 
 for env in env_dict:
     if 'snake-plural-v0' in env:
@@ -12,7 +13,7 @@ for env in env_dict:
         del gym.envs.registration.registry.env_specs[env]
  
 
-import Gym_Snake_master.gym_snake
+import gym_snake
 import numpy as np
 import tensorflow as tf
 from tensorflow import keras
@@ -20,7 +21,7 @@ from tensorflow.keras import layers
 import pandas as pd 
 import random
 
-game_on = True
+
 testing = False
 
 if game_on:
@@ -394,7 +395,7 @@ def loop(hum_input):
         del done_history[:1]
 
 #####################################################
-while True:  # Run until solved
+while game_on == False:  # Run until solved
     state = np.array(env.reset())
     game_controller = env.controller
     episode_reward = [0,0]
