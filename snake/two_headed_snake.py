@@ -1,6 +1,8 @@
 '''
 Preparing Gym Environment
 '''
+from time import time
+
 import gym
 #from snake_learning import loop
 
@@ -512,7 +514,7 @@ def taunt(taunts, color):
     select = random.randint(0,len(taunts)-1)
     selected = taunts[select]
     print(selected)
-    message(selected, color)
+    return selected, color
 
 def game_loop():
     
@@ -534,6 +536,7 @@ def game_loop():
     p2_x_change = 0
     p1_y_change = 0
     p2_y_change = 0
+    taunting = False
     foodx = game_controller.grid.food_coord[0] * snake_block
     foody = game_controller.grid.food_coord[1] * snake_block
     print("food_coord ", foody)
@@ -644,10 +647,14 @@ def game_loop():
             
             player_one.length += 1
             # Hannah
-            if player_one.length == player_two.length:
-                taunt(nTaunts, 'blue')
-            else:
-                taunt(gTaunts, 'green')
+            if player_one.length == player_two.length and not taunting:
+                taunt_msg = taunt(nTaunts, 'blue')
+                taunting = True
+                start_time = time()
+            elif not taunting:
+                taunt_msg = taunt(gTaunts, 'green')
+                taunting = True
+                start_time = time
             ####
         elif p2_x == foodx and p2_y == foody:
             game_controller.grid.new_food()
@@ -655,11 +662,22 @@ def game_loop():
             foody = game_controller.grid.food_coord[1] * snake_block
             player_two.length += 1
             # Hannah
-            if player_one.length == player_two.length:
-                taunt(nTaunts, 'yellow')
-            else:
-                taunt(bTaunts, 'red')
+            if player_one.length == player_two.length and not taunting:
+                taunt_msg = taunt(nTaunts, 'yellow')
+                taunting = True
+                start_time = time()
+            elif not taunting:
+                taunt_msg = taunt(bTaunts, 'red')
+                taunting = True
+                start_time = time()
             ####
+
+        if taunting:
+            if time() - start_time < 3:
+                message(taunt_msg[0], taunt_msg[1])
+                pygame.display.update()
+            else:
+                taunting = False
         clock.tick(snake_speed)
     pygame.quit()
 
