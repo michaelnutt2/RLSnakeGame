@@ -16,14 +16,14 @@ for env in env_dict:
     if 'snake-v0' in env:
         print("Remove {} from registry".format(env))
         del gym.envs.registration.registry.env_specs[env]
- 
+
 
 import gym_snake
 import numpy as np
 import tensorflow as tf
 from tensorflow import keras
 from tensorflow.keras import layers
-import pandas as pd 
+import pandas as pd
 import random
 
 game_on = True
@@ -76,33 +76,33 @@ def create_qRL_model():
     return keras.Model(inputs=inputs, outputs=action)
 
 def avoid_collision(state,snake,action):
-    
+
     saved_a = action
-    
+
     p_action = list(range(4))
-                   
+
     if action == 3:
         action = 1
     elif action == 0:
         action = 3
     elif action == 1:
         action = 0
-   
+
     while state[snake][action][2] == 1:
         p_action.remove(action)
         if(len(p_action) == 0):
                 return saved_a
         action = np.random.choice(p_action)
         #print("Preventing death ", snake, "with action ", action)
-   
+
     if action == 0:
         action = 1
     elif action == 1:
         action = 3
     elif action == 3:
         action = 0
-    
-    
+
+
     return action
 
 
@@ -190,25 +190,25 @@ def loop(hum_input,state,epsilon,epsilon_random_frames,epsilon_min):
     if frame_count%1000 == 0:
         pass
         #print(frame_count)
-    
+
     state_c = game_controller.get_snake_info()
 
     # Use epsilon-greedy for exploration for snake 0
     if frame_count < epsilon_random_frames or epsilon > np.random.rand(1)[0]:
         # Take random action
-        
+
         action0 = np.random.choice(num_actions)
-        
-        
+
+
         if testing or game_on == True: #No more random wall/body collision
             action0 = avoid_collision(state_c,0,action0)
-        
+
         if game_on == True:
             pass
             #press(dir_to_key[action0])
 
         #TODO: Input the action of the player 2 human
-        
+
 
         #TODO: Add algorithm to avoid walls and direct towards food
 
@@ -216,7 +216,7 @@ def loop(hum_input,state,epsilon,epsilon_random_frames,epsilon_min):
     else:
         # Predict action Q-values
         # From environment state
-        
+
         state = tf.cast(state, tf.float32)
         state_tensor = tf.convert_to_tensor(state)
         state_tensor = tf.expand_dims(state_tensor, 0)
@@ -224,12 +224,12 @@ def loop(hum_input,state,epsilon,epsilon_random_frames,epsilon_min):
         # Take best action
         #print("Taking educated guess snake 0: ")
         #print(random.choice(pd.DataFrame(action_probs.numpy()[0]).nlargest(n=1,columns=[0],keep='all').index))
-                
-        
+
+
         action0 = random.choice(pd.DataFrame(action_probs.numpy()[0]).nlargest(n=1,columns=[0],keep='all').index)
-        
+
         action0 = avoid_collision(state_c,0,action0)
-        
+
         for p_a in range(4): #just grab the food lol
             if state_c[0][p_a][2] == 2:
                 action0 = p_a
@@ -240,7 +240,7 @@ def loop(hum_input,state,epsilon,epsilon_random_frames,epsilon_min):
                 elif action0 == 3:
                     action0 = 0
                 print("Forcing food 0 with action ", action0)
-        
+
     # Use epsilon-greedy for exploration for snake 1
     if game_on == True:
         # Human player input = action 1
@@ -250,17 +250,17 @@ def loop(hum_input,state,epsilon,epsilon_random_frames,epsilon_min):
         if frame_count < epsilon_random_frames or epsilon > np.random.rand(1)[0]:
             # Take random action
             action1 = np.random.choice(num_actions)
-            
+
             if testing or game_on == True: #No more random wall/body collision
                 action1 = avoid_collision(state,1,action1)
-                
+
         else:
             # Predict action Q-values
             # From environment state
             state1 = [[],[]]
             state1[0] = state[1]
             state1[1] = state[0]
-            
+
             state1 = tf.cast(state1, tf.float32)
             state_tensor = tf.convert_to_tensor(state)
             state_tensor = tf.expand_dims(state_tensor, 0)
@@ -269,9 +269,9 @@ def loop(hum_input,state,epsilon,epsilon_random_frames,epsilon_min):
             #print("Taking educated guess snake 1: ")
             #print(random.choice(pd.DataFrame(action_probs.numpy()[0]).nlargest(n=1,columns=[0],keep='all').index))
             action1 = random.choice(pd.DataFrame(action_probs.numpy()[0]).nlargest(n=1,columns=[0],keep='all').index)
-            
+
             action1 = avoid_collision(state_c,1,action1)
-            
+
             for p_a in range(4): #just grab the food lol
                 if state_c[1][p_a][2] == 2:
                     action1 = p_a
@@ -282,7 +282,7 @@ def loop(hum_input,state,epsilon,epsilon_random_frames,epsilon_min):
                     elif action1 == 3:
                         action1 = 0
                     print("Forcing food 1 with action ", action1)
-        
+
 
 
 
@@ -294,12 +294,12 @@ def loop(hum_input,state,epsilon,epsilon_random_frames,epsilon_min):
     state_next, reward, done, _ = env.step([action0,action1])
     #print(reward)
     state_next = np.array(state_next)
-    
+
     if reward[0] >= 1.0 or reward[0] <= -1.0:
         episode_reward[0] += reward[0]
     if reward[1] >= 1.0 or reward[1] <= -1.0:
         episode_reward[1] += reward[1]
-    
+
 
     # Save actions and states in replay buffer
     action_history.append([action0,action1])
@@ -323,7 +323,7 @@ def loop(hum_input,state,epsilon,epsilon_random_frames,epsilon_min):
         done_sample0 = tf.convert_to_tensor(
             [float(done_history[i]) for i in indices]
         )
-        
+
         # Build the updated Q-values for the sampled future states
         # Use the target model for stability
         future_rewards0 = model_targets[0].predict(state_next_sample0)
@@ -351,7 +351,7 @@ def loop(hum_input,state,epsilon,epsilon_random_frames,epsilon_min):
         # Backpropagation
         grads = tape.gradient(loss, models[0].trainable_variables)
         optimizer.apply_gradients(zip(grads, models[0].trainable_variables))
-        
+
         # Using list comprehension to sample from replay buffer snake 1
         state_sample1 = np.array([state_history[i] for i in indices])
         state_next_sample1 = np.array([state_next_history[i] for i in indices])
@@ -360,7 +360,7 @@ def loop(hum_input,state,epsilon,epsilon_random_frames,epsilon_min):
         done_sample1 = tf.convert_to_tensor(
             [float(done_history[i]) for i in indices]
         )
-        
+
         # Build the updated Q-values for the sampled future states
         # Use the target model for stability
         future_rewards1 = model_targets[1].predict(state_next_sample1)
@@ -374,7 +374,7 @@ def loop(hum_input,state,epsilon,epsilon_random_frames,epsilon_min):
 
         # Create a mask so we only calculate loss on the updated Q-values
         masks = tf.one_hot(action_sample1, num_actions)
-        
+
         with tf.GradientTape() as tape:
             # Train the model on the states and updated Q-values
             state_sample1 = tf.cast(state_sample1, tf.float32)
@@ -404,7 +404,7 @@ def loop(hum_input,state,epsilon,epsilon_random_frames,epsilon_min):
         del state_next_history[:1]
         del action_history[:1]
         del done_history[:1]
-        
+
     return action0
 
 #####################################################
@@ -456,7 +456,7 @@ def update_move(player, event, is_hum = False):
     global hum_input
     if is_hum:
         if event == player.key_list[0]:    # w/UP
-            if is_hum: 
+            if is_hum:
                 hum_input = 0
             return 0, -snake_block              # x_change, y_change
         elif event == player.key_list[1]:  # a/LEFT
@@ -468,12 +468,12 @@ def update_move(player, event, is_hum = False):
                 hum_input = 2
             return 0, snake_block
         elif event == player.key_list[3]:  # d/RIGHT
-            if is_hum: 
+            if is_hum:
                 hum_input = 1
             return snake_block, 0
     else :
         if event == 0:    # w/UP
-            if is_hum: 
+            if is_hum:
                 hum_input = 0
             return 0, -snake_block              # x_change, y_change
         elif event == 3:  # a/LEFT
@@ -485,10 +485,10 @@ def update_move(player, event, is_hum = False):
                 hum_input = 2
             return 0, snake_block
         elif event == 1:  # d/RIGHT
-            if is_hum: 
+            if is_hum:
                 hum_input = 1
             return snake_block, 0
-        
+
 
 
 def the_score(p1_score, p2_score):
@@ -513,17 +513,22 @@ def message(msg, color):
 def taunt(taunts, color):
     select = random.randint(0,len(taunts)-1)
     selected = taunts[select]
+    if selected[-1] == 'G':
+        if color == 'blue':
+            color = 'purple'
+        elif color == 'red':
+            color = 'pink'
     print(selected)
     return selected, color
 
 def game_loop():
-    
-    
-    
+
+
+
     global game_controller
     global state
     global hum_input
-    
+
     player_one = Snake(True, player_one_keys)
     player_two = Snake(False, player_two_keys)
     game_over = False
@@ -540,26 +545,34 @@ def game_loop():
     foodx = game_controller.grid.food_coord[0] * snake_block
     foody = game_controller.grid.food_coord[1] * snake_block
     print("food_coord ", foody)
-    
+
     gTaunts = bTaunts = nTaunts = []
-    with open("BadTaunts.csv", 'r+') as i_f:
+    with open("GptBotTaunt.csv", 'r+') as i_f:
         while True:
             line = i_f.readline()
             if line == "" :
                     break
             bTaunts.append(line)
-    with open("NeutralTaunts.csv", 'r+') as i_f:
+            
+    """with open("NeutralTaunts.csv", 'r+') as i_f:
         while True:
             line = i_f.readline()
             if line == "" :
                     break
-            nTaunts.append(line)
-    with open("GoodTaunts.csv", 'r+') as i_f:
+            nTaunts.append(line)"""
+
+    with open("GptPlayerTaunt.csv", 'r+') as i_f:
         while True:
             line = i_f.readline()
             if line == "" :
                     break
             gTaunts.append(line)
+
+    # Remove duplicates
+    _gTaunts = set(gTaunts)
+    gTaunts = list(_gTaunts)
+    _bTaunts = set(bTaunts)
+    bTaunts = list(_bTaunts)
 
     while not game_over:
         while game_close:
@@ -582,10 +595,10 @@ def game_loop():
                         hum_input = -1
                         game_controller = env.controller
                         game_loop()
-                        
+
         foodx = game_controller.grid.food_coord[0] * snake_block
         foody = game_controller.grid.food_coord[1] * snake_block
-            
+
 
 
         for event in pygame.event.get():
@@ -598,11 +611,11 @@ def game_loop():
                 elif event.key in player_two_keys:
                     #print(hum_input)
                     p2_x_change, p2_y_change = update_move(player_two, event.key, True)
-                    
+
         if hum_input != -1:
             action = loop(hum_input,state,epsilon,epsilon_random_frames,epsilon_min)
             p1_x_change, p1_y_change = update_move(player_one, action, False)
-        
+
 
 
         if p1_x >= display_width or p1_x < 0 or p1_y >= display_height or p1_y < 0:
@@ -644,15 +657,16 @@ def game_loop():
             game_controller.grid.new_food()
             foodx = game_controller.grid.food_coord[0] * snake_block
             foody = game_controller.grid.food_coord[1] * snake_block
-            
+
             player_one.length += 1
             # Hannah
+            """
             if player_one.length == player_two.length and not taunting:
                 taunt_msg = taunt(nTaunts, 'blue')
                 taunting = True
-                start_time = time()
-            elif not taunting:
-                taunt_msg = taunt(gTaunts, 'green')
+                start_time = time()"""
+            if not taunting:
+                taunt_msg = taunt(gTaunts, 'blue')
                 taunting = True
                 start_time = time
             ####
@@ -662,11 +676,11 @@ def game_loop():
             foody = game_controller.grid.food_coord[1] * snake_block
             player_two.length += 1
             # Hannah
-            if player_one.length == player_two.length and not taunting:
+            """if player_one.length == player_two.length and not taunting:
                 taunt_msg = taunt(nTaunts, 'yellow')
                 taunting = True
-                start_time = time()
-            elif not taunting:
+                start_time = time()"""
+            if not taunting:
                 taunt_msg = taunt(bTaunts, 'red')
                 taunting = True
                 start_time = time()
@@ -683,4 +697,3 @@ def game_loop():
 
 
 game_loop()
-
