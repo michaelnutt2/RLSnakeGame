@@ -171,8 +171,8 @@ epsilon_random_frames = 0
 epsilon_greedy_frames = 1
 epsilon = 0.1
 epsilon_min = 0.1
-models[1] = keras.models.load_model("snakeRL_5040_FINAL.keras")
-models[0] = keras.models.load_model("snakeRL_5040_FINAL.keras")
+models[1] = keras.models.load_model("snake/snakeRL_5040_FINAL.keras")
+models[0] = keras.models.load_model("snake/snakeRL_5040_FINAL.keras")
 model_targets[0].set_weights(models[0].get_weights())
 model_targets[1].set_weights(models[1].get_weights())
 max_memory_length = 100
@@ -547,7 +547,7 @@ def game_loop():
     print("food_coord ", foody)
 
     gTaunts = bTaunts = nTaunts = []
-    with open("GptBotTaunt.csv", 'r+') as i_f:
+    with open('snake/GptBotTaunt.csv', 'r+') as i_f:
         while True:
             line = i_f.readline()
             if line == "" :
@@ -561,7 +561,7 @@ def game_loop():
                     break
             nTaunts.append(line)"""
 
-    with open("GptPlayerTaunt.csv", 'r+') as i_f:
+    with open("snake/GptPlayerTaunt.csv", 'r+') as i_f:
         while True:
             line = i_f.readline()
             if line == "" :
@@ -668,7 +668,7 @@ def game_loop():
             if not taunting:
                 taunt_msg = taunt(gTaunts, 'blue')
                 taunting = True
-                start_time = time
+                start_time = time()
             ####
         elif p2_x == foodx and p2_y == foody:
             game_controller.grid.new_food()
@@ -687,7 +687,8 @@ def game_loop():
             ####
 
         if taunting:
-            if time() - start_time < 3:
+            curr_time = time()
+            if (curr_time - start_time) < 3:
                 message(taunt_msg[0], taunt_msg[1])
                 pygame.display.update()
             else:
